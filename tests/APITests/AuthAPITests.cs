@@ -148,8 +148,66 @@ public class AuthAPITests : APITestBase
         }
 
         var meResponse = await AuthApi.GetCurrentUserAsync();
-        Assert.That((int)meResponse.StatusCode, Is.AnyOf(200, 401),
+        Assert.That((int)meResponse.StatusCode, Is.EqualTo(200),
             "Endpoint result depends on external account provisioning in the target environment.");
+    }
+
+    [Test]
+    [Category("High")]
+    [Category("Smoke")]
+    [Priority(TestPriority.High)]
+    [AllureStory("AuthClient helpers: positive valid token flow")]
+    [AllureSeverity(SeverityLevel.critical)]
+    public async Task AuthClientHelpers_WithValidToken_ShouldReportValidStateAndDetails()
+    {
+        var directAuthClient = new AuthClient(
+            SharedApiClient,
+            Logger,
+            ApiData.Endpoints.Auth.Login,
+            ApiData.Assertions.Auth.TokenJsonPath,
+            defaultTokenTtlSeconds: 3600);
+
+        // explicit valid login if needed.
+        var credentials = ResolveRoleCredentials();
+        var configuredToken = await directAuthClient.LoginAsync(
+            credentials.Email,
+            credentials.Password,
+            tokenScenario: "valid",
+            tokenState: true);
+
+        // Direct AuthClient usage needs explicit rebind to the current execution context.
+        if (configuredToken is null)
+        {
+            ApiSessionContext.Current.ClearToken();
+            ApiSessionContext.Current.ClearStoredCredentials();
+        }
+        else
+        {
+            ApiSessionContext.Current.SetToken(configuredToken);
+            ApiSessionContext.Current.StoreCredentials(credentials.Email, credentials.Password);
+        }
+
+        directAuthClient.ValidateTokenExists(true, "valid");
+
+        var tokenState = directAuthClient.GetCurrentTokenState();
+        var tokenDetails = directAuthClient.GetCurrentTokenDetails();
+
+        Console.WriteLine("=== AuthClientHelpers_WithValidToken_ShouldReportValidStateAndDetails ===");
+        Console.WriteLine($"GetCurrentTokenState(): {tokenState}");
+        Console.WriteLine($"GetCurrentTokenDetails() object: {tokenDetails}");
+        Console.WriteLine($"GetCurrentTokenDetails().AccessToken: {tokenDetails?.AccessToken}");
+        Console.WriteLine($"GetCurrentTokenDetails().ExpiresAt: {tokenDetails?.ExpiresAt:O}");
+        Console.WriteLine($"GetCurrentTokenDetails().IsValid: {tokenDetails?.IsValid}");
+        Console.WriteLine($"GetCurrentTokenDetails().AllowRefresh: {tokenDetails?.AllowRefresh}");
+
+        Assert.That(tokenState, Is.True,
+            "GetCurrentTokenState should be true for a valid token.");
+        Assert.That(tokenDetails, Is.Not.Null,
+            "GetCurrentTokenDetails should return token information for a valid token.");
+        Assert.That(tokenDetails!.AccessToken, Is.Not.Null.And.Not.Empty,
+            "Access token should be populated for valid token flow.");
+        Assert.That(tokenDetails.IsValid, Is.True,
+            "Token details should indicate a valid token.");
     }
 
     [Test]
@@ -172,73 +230,5 @@ public class AuthAPITests : APITestBase
             "Invalid negative flow should stamp the known invalid token marker.");
         Assert.That(configured.AllowRefresh, Is.False,
             "Invalid negative flow token should be non-refreshable.");
-    }
-
-    [Test]
-    [Explicit("Diagnostic sample: run manually to print AuthClient token helper outputs.")]
-    [Category("Diagnostic")]
-    [AllureStory("AuthClient helper diagnostics without presetup login")]
-    [AllureSeverity(SeverityLevel.trivial)]
-    public async Task AuthClientHelpers_DiagnosticSample_ShouldPrintConsoleOutput()
-    {
-        var credentials = ResolveRoleCredentials();
-        Assert.That(SharedAuthClient, Is.Not.Null, "SharedAuthClient should be initialized.");
-
-        // Force a clean state so this sample does not depend on suite-level token preload.
-        ApiSessionContext.Current.ClearToken();
-        ApiSessionContext.Current.ClearStoredCredentials();
-
-        Console.WriteLine("=== BEFORE LoginAsync (clean context) ===");
-        var beforeState = SharedAuthClient.GetCurrentTokenState();
-        var beforeDetails = SharedAuthClient.GetCurrentTokenDetails();
-        Console.WriteLine($"GetCurrentTokenState(): {beforeState}");
-        Console.WriteLine($"GetCurrentTokenDetails(): {(beforeDetails is null ? "null" : "not-null")}");
-
-        try
-        {
-            SharedAuthClient.ValidateTokenExists(false, "missing");
-            Console.WriteLine("ValidateTokenExists(false, \"missing\"): PASS");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"ValidateTokenExists(false, \"missing\"): FAIL -> {ex.Message}");
-            throw;
-        }
-
-        try
-        {
-            SharedAuthClient.ValidateTokenExists(true, "valid");
-            Console.WriteLine("ValidateTokenExists(true, \"valid\"): PASS (unexpected)");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"ValidateTokenExists(true, \"valid\"): Expected exception -> {ex.Message}");
-        }
-
-        Console.WriteLine("=== LoginAsync (expired,false) ===");
-        var configured = await LoginAsync(
-            credentials.Email,
-            credentials.Password,
-            tokenScenario: "expired",
-            tokenState: false);
-
-        Console.WriteLine($"LoginAsync returned null?: {configured is null}");
-
-        var afterState = SharedAuthClient.GetCurrentTokenState();
-        var afterDetails = SharedAuthClient.GetCurrentTokenDetails();
-        Console.WriteLine("=== AFTER LoginAsync ===");
-        Console.WriteLine($"GetCurrentTokenState(): {afterState}");
-        Console.WriteLine($"GetCurrentTokenDetails().AccessToken (first 20 chars): {afterDetails?.AccessToken[..Math.Min(20, afterDetails.AccessToken.Length)]}");
-        Console.WriteLine($"GetCurrentTokenDetails().ExpiresAt: {afterDetails?.ExpiresAt:O}");
-        Console.WriteLine($"GetCurrentTokenDetails().IsValid: {afterDetails?.IsValid}");
-        Console.WriteLine($"GetCurrentTokenDetails().AllowRefresh: {afterDetails?.AllowRefresh}");
-
-        SharedAuthClient.ValidateTokenExists(true, "expired");
-        Console.WriteLine("ValidateTokenExists(true, \"expired\"): PASS");
-
-        Assert.That(beforeState, Is.False, "Before login, state should be false in clean context.");
-        Assert.That(beforeDetails, Is.Null, "Before login, details should be null in clean context.");
-        Assert.That(configured, Is.Not.Null, "Expired scenario should produce a token (real or synthetic).");
-        Assert.That(afterDetails, Is.Not.Null, "After login, token details should be available.");
     }
 }

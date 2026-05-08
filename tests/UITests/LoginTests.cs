@@ -24,6 +24,30 @@ public class LoginTests : BaseTest
     }
 
     [Test]
+    [Category("High")]
+    [Category("Smoke")]
+    [Priority(TestPriority.High)]
+    [AllureStory("Login page field visibility")]
+    public void LoginPage_WithoutSigningIn_ShouldDisplayAllRequiredFields()
+    {
+        var loginPage = new LoginPage(Driver, Wait);
+
+        ReportHelper.AddStep("Verifying login page is loaded and all required fields are visible");
+        Assert.That(Driver.Url, Does.Contain("/login"),
+            "Expected browser to be on login page.");
+        Assert.That(loginPage.IsEmailFieldDisplayed(), Is.True,
+            "Email field should be visible on login page.");
+        Assert.That(loginPage.IsPasswordFieldDisplayed(), Is.True,
+            "Password field should be visible on login page.");
+        Assert.That(loginPage.IsLoginButtonDisplayed(), Is.True,
+            "Login button should be visible on login page.");
+
+        var loginButtonText = loginPage.GetLoginButtonText();
+        Assert.That(loginButtonText.Contains("Sign In", StringComparison.OrdinalIgnoreCase), Is.True,
+            "Login button text should indicate sign-in action.");
+    }
+
+    [Test]
     [TestCase("user", Category = "user")]
     [TestCase("admin", Category = "admin")]
     [TestCase("organizer", Category = "organizer")]

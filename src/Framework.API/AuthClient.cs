@@ -154,7 +154,7 @@ public sealed class AuthClient
         }
     }
 
-    private async Task<HttpResponseMessage> ExecuteLoginRequestAsync(
+    public async Task<HttpResponseMessage> ExecuteLoginRequestAsync(
         string email,
         string password,
         CancellationToken cancellationToken)
@@ -172,7 +172,7 @@ public sealed class AuthClient
         }
     }
 
-    private TokenState ExtractTokenFromResponse(string responseBody)
+    public TokenState ExtractTokenFromResponse(string responseBody)
     {
         if (string.IsNullOrWhiteSpace(responseBody))
         {
@@ -202,7 +202,7 @@ public sealed class AuthClient
         return new TokenState(token, DateTimeOffset.UtcNow.AddSeconds(ttlSeconds));
     }
 
-    private static TokenState BuildSyntheticToken(AuthTokenScenario scenario)
+    public static TokenState BuildSyntheticToken(AuthTokenScenario scenario)
     {
         return scenario switch
         {
@@ -212,7 +212,7 @@ public sealed class AuthClient
         };
     }
 
-    private static string ClassifyState(TokenState? token)
+    public static string ClassifyState(TokenState? token)
     {
         if (token is null)
         {
@@ -227,7 +227,7 @@ public sealed class AuthClient
         return token.IsValid ? "valid" : "expired";
     }
 
-    private static string NormalizeExpectedState(string expectedState)
+    public static string NormalizeExpectedState(string expectedState)
     {
         var normalized = (expectedState ?? string.Empty).Trim().ToLowerInvariant();
         return normalized switch
@@ -240,7 +240,7 @@ public sealed class AuthClient
         };
     }
 
-    private static AuthTokenScenario ParseScenario(string tokenScenario)
+    public static AuthTokenScenario ParseScenario(string tokenScenario)
     {
         var normalized = (tokenScenario ?? string.Empty).Trim().ToLowerInvariant();
         return normalized switch
