@@ -1,16 +1,9 @@
-using Allure.NUnit;
-using Allure.NUnit.Attributes;
-using Allure.Net.Commons;
 using Framework.API;
-using Framework.Reporting;
+using Framework.Reports;
 
 namespace APITests;
 
 [Parallelizable(ParallelScope.Self)]
-[AllureNUnit]
-[AllureParentSuite("APITests")]
-[AllureSuite("Events API")]
-[AllureFeature("Events")]
 [TestRole("user")]
 public class EventsAPITests : APITestBase
 {
@@ -18,8 +11,6 @@ public class EventsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("GET /api/events with query params")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task ListEvents_ShouldSupportPaginationAndFilters()
     {
         EnsurePositiveAuthContextOrInconclusive("Events");
@@ -43,8 +34,6 @@ public class EventsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("POST/PUT/DELETE /api/events/{id}")]
-    [AllureSeverity(SeverityLevel.critical)]
     public async Task CreateUpdateDeleteEvent()
     {
         EnsurePositiveAuthContextOrInconclusive("Events");
@@ -98,8 +87,6 @@ public class EventsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("POST /api/events invalid payload")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task CreateEvent_WithInvalidPayload_ShouldReturnValidationError()
     {
         EnsurePositiveAuthContextOrInconclusive("Events");

@@ -1,416 +1,158 @@
-# Selenium Automation Framework (C#)
+# Selenium Automation Framework Architecture
 
-## Architecture & Setup Guide
+## 1. Objective
 
-Project: SeleniumAutomationFramework
+Provide a reusable automation platform for UI and API testing with:
 
-Related guides:
+- NUnit-based execution
+- Selenium Page Object Model for UI
+- HttpClient-based API clients
+- Role-aware authentication
+- Pluggable reporting
+- CI-friendly outputs and artifacts
 
-- [SetupGuide.md](./SetupGuide.md)
-- [ExecutionGuide.md](./ExecutionGuide.md)
-- [AutomationCodingStandards.md](./AutomationCodingStandards.md)
-- [GitWorkflow.md](./GitWorkflow.md)
-- [README.md](../README.md)
+---
 
-------------------------------------------------------------------------
+## 2. High-Level Design
 
-# 1. Objective
+Execution flow:
 
-This project aims to create a **generic Selenium-based automation
-framework using C#** that can be reused across multiple web
-applications.
+Test classes -> shared test base -> framework services -> browser/API layers -> reports
 
-The framework is designed to support:
+The framework favors shared helpers and centralized lifecycle management so tests remain small and intent-focused.
 
--   UI automation
--   API automation
--   data-driven testing
--   cross-browser execution
--   CI/CD integration
--   structured reporting
+---
 
-The framework follows **enterprise-grade modular architecture** to
-ensure scalability, maintainability, and ease of extension by QA
-engineers.
+## 3. Repository Structure
 
-------------------------------------------------------------------------
-
-# 2. Technology Stack
-
-  Component           Technology
-  ------------------- ------------------------------------
-  Language            C# (.NET)
-  UI Automation       Selenium WebDriver
-  Test Framework      NUnit
-  Design Pattern      Page Object Model (POM)
-  API Automation      HttpClient
-  Reporting           Allure Reports
-  Logging             Serilog
-  Assertions          FluentAssertions
-  Driver Management   WebDriverManager
-  Configuration       Microsoft.Extensions.Configuration
-  IDE                 Visual Studio Code
-  Version Control     Git / GitHub
-  CI/CD               GitHub Actions
-
-------------------------------------------------------------------------
-
-# 3. Development Environment Setup
-
-The framework supports **both macOS and Windows environments**.
-
-------------------------------------------------------------------------
-
-# 4. macOS Setup
-
-### Install .NET SDK
-
-Download from:
-
-https://dotnet.microsoft.com/download
-
-Verify installation:
-
-``` bash
-dotnet --version
+```text
+SeleniumAutomationFramework
+|- src/
+|  |- Framework.Core/      # config, driver lifecycle, waits, logging, screenshots
+|  |- Framework.API/       # HTTP abstractions, auth context, response validation
+|  |- Framework.Data/      # JSON/Excel data providers + role credential resolver
+|  |- Framework.Reports/   # report pipeline + reporter implementations
+|  |- ApiClients/          # domain API clients (Auth, Events, Bookings)
+|  |- Pages/               # shared page objects
+|- tests/
+|  |- UITests/
+|  |- APITests/
+|- config/
+|  |- appsettings.json
+|- resources/testdata/
+|- reports/
+|- ci/
+|- docs/
 ```
 
-### Install Visual Studio Code
+---
 
-https://code.visualstudio.com
+## 4. Core Layer Details
 
-### Install VS Code Extensions
+### Framework.Core
 
--   C#
--   C# Dev Kit
--   GitHub Copilot
--   GitHub Copilot Chat
--   .NET Test Explorer
+- `ConfigManager` loads settings via standard .NET configuration precedence.
+- `DriverManager` manages browser lifecycle and supports environment override via `TestSettings__Browser`.
+- `WaitHelper` centralizes explicit wait behavior.
+- `TestLogger` writes execution logs under `reports/logs`.
+- `ScreenshotHelper` stores UI failure screenshots under `reports/screenshots`.
 
-### Install Git
+### Framework.API and ApiClients
 
-``` bash
-git --version
-```
+- `APIClient` is the shared HTTP transport abstraction.
+- `AuthClient` controls login and token scenario behavior (`valid`, `invalid`, `expired`, `missing`).
+- `ApiSessionContext` keeps token/credentials in-memory per async flow.
+- `AuthApiClient`, `EventsApiClient`, and `BookingsApiClient` expose feature-level endpoints.
 
-If not installed:
+### Framework.Data
 
-``` bash
-brew install git
-```
+- `JsonDataProvider` and `ExcelDataProvider` load test data.
+- `RoleCredentialProvider` resolves credentials by role.
+- Resolution order: `TEST_{ROLE}_EMAIL/PASSWORD` -> `roles.{role}` in JSON -> fail fast.
 
-------------------------------------------------------------------------
+### Framework.Reports
 
-# 5. Windows Setup
+- `ReportManager` is the single orchestration entry point.
+- `ReporterFactory` discovers reporters by `ReporterAliasAttribute`.
+- `SessionManager` owns run/session cleanup boundaries.
+- Built-in reporters:
+  - `HtmlReporter`
+  - `AllureReporter`
 
-### Install .NET SDK
+---
 
-https://dotnet.microsoft.com/download
+## 5. Test Layer
 
-Verify:
+### UI tests (`tests/UITests`)
 
-``` bash
-dotnet --version
-```
+- Inherit from `BaseTest`.
+- Use page objects from `src/Pages`.
+- Browser/session lifecycle is handled in setup/teardown.
+- On failure, screenshot and page source are captured and attached to reporting.
 
-### Install Visual Studio Code
+### API tests (`tests/APITests`)
 
-https://code.visualstudio.com
+- Inherit from `APITestBase`.
+- Role-specific suite token cache is maintained in-memory.
+- Positive flows reuse suite token; expired tokens are refreshed under lock.
+- Negative flows deliberately force token states and avoid silent auto-healing.
 
-### Install Extensions
+---
 
--   C#
--   C# Dev Kit
--   GitHub Copilot
--   GitHub Copilot Chat
--   .NET Test Explorer
+## 6. Role-Based Execution Model
 
-### Install Git
+Role resolution priority:
 
-https://git-scm.com
-
-Verify:
-
-``` bash
-git --version
-```
-
-------------------------------------------------------------------------
-
-# 6. Repository Structure
-
-    SeleniumAutomationFramework
-    │
-    ├── src
-    │   ├── Framework.Core
-    │   ├── Framework.API
-    │   ├── Framework.Data
-    │   └── Framework.Reporting
-    │
-    ├── tests
-    │   ├── UITests
-    │   └── APITests
-    │
-    ├── config
-    ├── resources
-    ├── reports
-    ├── ci
-    └── docs
-
-------------------------------------------------------------------------
-
-# 7. Framework Layers
-
-## Test Layer
-
-Location:
-
-    tests/
-
-Responsibilities:
-
--   test scenarios
--   assertions
--   orchestration of test flows
-
-Examples:
-
-    LoginTests.cs
-    CheckoutTests.cs
-    AccountTests.cs
-
-------------------------------------------------------------------------
-
-## Page Object Layer
-
-Location:
-
-    tests/UITests/Pages
-
-Responsibilities:
-
--   UI locators
--   page actions
--   reusable workflows
-
-Example:
-
-    LoginPage.cs
-    HomePage.cs
-
-Flow:
-
-    Test → Page Object → Selenium Driver
-
-------------------------------------------------------------------------
-
-## Core Framework Layer
-
-Location:
-
-    src/Framework.Core
-
-Responsibilities:
-
--   driver initialization
--   waits
--   screenshots
--   logging
--   configuration management
-
-Examples:
-
-    DriverManager.cs
-    WaitHelper.cs
-    ScreenshotHelper.cs
-    Logger.cs
-    ConfigManager.cs
-
-------------------------------------------------------------------------
-
-## API Automation Layer
-
-Location:
-
-    src/Framework.API
-
-Tool:
-
-    HttpClient
-
-Examples:
-
-    ApiClient.cs
-    ApiRequestBuilder.cs
-    ApiResponseValidator.cs
-
-------------------------------------------------------------------------
-
-## Data Layer
-
-Location:
-
-    src/Framework.Data
-
-Data Sources:
-
--   Excel
--   JSON
-
-Examples:
-
-    ExcelReader.cs
-    JsonReader.cs
-    TestDataProvider.cs
-
-------------------------------------------------------------------------
-
-## Reporting Layer
-
-Location:
-
-    src/Framework.Reporting
-
-Reporting Tool:
-
-    Allure Reports
-
-Capabilities:
-
--   execution dashboards
--   failure screenshots
--   CI integration
-
-------------------------------------------------------------------------
-
-# 8. Test Data & Resources
-
-Test data:
-
-    resources/
-
-Examples:
-
-    TestData.xlsx
-    API payloads
-
-Environment configs:
-
-    config/
-
-Examples:
-
-    appsettings.json
-    environments.json
-
-------------------------------------------------------------------------
-
-# 9. CI/CD Integration
-
-Pipelines stored in:
-
-    ci/
-
-Tool:
-
-    GitHub Actions
-
-Capabilities:
-
--   pull request automation runs
--   scheduled regression runs
--   artifact storage
--   Allure report publishing
-
-------------------------------------------------------------------------
-
-# 10. Cross Browser Support
-
-Supported browsers:
-
--   Chrome
--   Edge
--   Firefox
-
-Driver management:
-
-    WebDriverManager
-
-------------------------------------------------------------------------
-
-# 11. Initial Git Repository Setup
-
-``` bash
-git init
-dotnet new gitignore
-git add .
-git commit -m "Initial enterprise automation framework architecture"
-```
-
-------------------------------------------------------------------------
-
-# 12. GitHub Repository
-
-Create repository:
-
-    SeleniumAutomationFramework
-
-Push:
-
-``` bash
-git remote add origin <repo-url>
-git branch -M main
-git push -u origin main
-```
-
-------------------------------------------------------------------------
-
-# 13. Next Implementation Steps
-
-1.  Implement DriverManager
-2.  Implement BaseTest class
-3.  Implement ConfigManager
-4.  Implement WaitHelper utilities
-5.  Implement Page Object base structure
-6.  Create first UI tests
-7.  Configure Allure reporting
-8.  Configure GitHub Actions pipeline
-
-------------------------------------------------------------------------
-
-# 14. Role-Based Execution Architecture (Current)
-
-Execution role selection order:
 1. Method-level `TestRoleAttribute`
 2. Class-level `TestRoleAttribute`
 3. `TEST_EXECUTION_ROLE` environment variable
+4. Fail if role is required but missing
 
-Credential resolution for selected role:
-1. `TEST_{ROLE}_EMAIL` and `TEST_{ROLE}_PASSWORD`
-2. `roles.{role}` in `resources/testdata/loginData.json`
-3. Fail fast for missing or invalid credential pairs
+This allows the same test implementation to run across user/admin/organizer/viewer credentials without code duplication.
 
-API token strategy is role-aware:
-- Suite token cache is maintained per role (`_suiteTokens`)
-- Positive flows bind cached token for resolved role
-- Expired token refresh is lock-protected and scoped per role
+---
 
-This allows user-only, admin-only, and mixed-role test execution in the same framework without adding a new architectural layer.
+## 7. Reporting Lifecycle
 
-# Expected Outcome
+- Active reporter is selected by `Reporting:ActiveReporter` (or `Reporting__ActiveReporter`).
+- Session cleanup is centrally owned by `SessionManager`; reporters should not perform global cleanup in `InitializeSuite`.
+- `ReportManager.RecordTestResult` enriches failures with:
+  - failure details (message + stack trace)
+  - UI screenshot attachment when available
 
-After Phase 1:
+Default output root:
 
--   reusable Selenium automation framework
--   enterprise architecture
--   CI/CD integration
--   reporting
--   scalable test platform
+- `reports/execution-report.html`
+- `reports/logs/`
+- `reports/screenshots/`
 
-Future enhancements:
+Allure artifacts are produced in `reports/` as JSON result/attachment files used by the Allure-style HTML generation flow.
 
--   Selenium Grid
--   Docker execution
--   BDD support
--   visual testing
--   mobile automation
+---
+
+## 8. Configuration
+
+Primary runtime config is in `config/appsettings.json`:
+
+- `TestSettings` for UI/browser/waits/base URLs
+- `Api` for API base URL and token masking behavior
+- `Reporting` for active reporter and history setting
+
+Environment variables can override configuration values using double-underscore notation.
+
+---
+
+## 9. CI/CD Fit
+
+The framework is designed for pipeline execution with:
+
+- deterministic CLI commands (`dotnet test ...`)
+- role-scoped runs via environment variables
+- artifact-friendly report/log/screenshot outputs
+
+See:
+
+- `docs/SetupGuide.md`
+- `docs/ExecutionGuide.md`
+- `docs/RoleBasedAuthIntegrationGuide.md`
+- `docs/ReporterIntegrationGuide.md`

@@ -1,14 +1,14 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
 using System.Text;
-using Framework.Reporting;
+using Framework.Reports;
 
 namespace Framework.API;
 
 /// <summary>
 /// HTTP client wrapper for making REST API calls in tests.
 /// Sends prepared <see cref="HttpRequestMessage"/> instances, records sanitized request/response
-/// exchanges in <see cref="Framework.Reporting.RuntimeContext"/>, and exposes bearer-token
+/// exchanges in <see cref="Framework.Reports.RuntimeContext"/>, and exposes bearer-token
 /// visibility control for reporting.
 /// </summary>
 public class APIClient : IDisposable

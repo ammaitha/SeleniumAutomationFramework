@@ -27,7 +27,6 @@ env:
   BUILD_CONFIGURATION: 'Release'
 
 jobs:
-  # ── 1. Build ─────────────────────────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -51,7 +50,6 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}
 
-  # ── 2. API Tests ──────────────────────────────────────────────────────────────
   api-tests:
     name: API Tests
     needs: build
@@ -137,15 +135,6 @@ jobs:
             TEST_EXECUTION_ROLE="$DEFAULT_ROLE" dotnet test tests/APITests/APITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           fi
 
-      - name: Upload Allure Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-api
-          path: reports/allure-results/
-          retention-days: 7
-
-  # ── 3. UI Tests (cross-browser matrix) ───────────────────────────────────────
   ui-tests:
     name: UI Tests — ${{ matrix.browser }}
     needs: build
@@ -188,7 +177,6 @@ jobs:
           TestSettings__Browser: ${{ matrix.browser }}
           TestSettings__Headless: 'true'
         run: |
-          # CI requirement: always run the full UI suite.
           COMMON_FILTER=""
 
           ROLES=(user admin organizer viewer)
@@ -222,100 +210,3 @@ jobs:
             echo "Running full UI suite (no filter)"
             TEST_EXECUTION_ROLE="$DEFAULT_ROLE" dotnet test tests/UITests/UITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           fi
-
-      - name: Upload Allure Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-ui-${{ matrix.browser }}
-          path: reports/allure-results/
-          retention-days: 7
-
-  # ── 4. Allure Report (combined across all jobs) ───────────────────────────────
-  allure-report:
-    name: Allure Report
-    needs: [api-tests, ui-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all Allure results
-        run: |
-          rm -rf .ci/allure-results-merged .ci/allure-report
-          mkdir -p .ci/allure-results-merged .ci/allure-report
-
-      - name: Download all Allure results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: allure-results-*
-          path: .ci/allure-results-merged/
-          merge-multiple: true
-
-      - name: Restore previous Allure history
-        id: allure-history-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: .ci/allure-history
-          key: ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-
-
-      - name: Inject history into merged results
-        run: |
-          if [ -d ".ci/allure-history/history" ]; then
-            mkdir -p .ci/allure-results-merged/history
-            cp -R .ci/allure-history/history/. .ci/allure-results-merged/history/
-            echo "Restored history into merged results."
-          else
-            echo "No previous history cache found."
-          fi
-
-      - name: Install Allure CLI
-        run: |
-          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-          sudo tar -xzf allure.tgz -C /opt/
-          sudo ln -sf /opt/allure-2.27.0/bin/allure /usr/local/bin/allure
-
-      - name: Generate Allure Report
-        run: |
-          echo "Merged Allure result files:"
-          find .ci/allure-results-merged -type f | wc -l
-          allure generate .ci/allure-results-merged/ -o .ci/allure-report/ --clean --single-file
-
-      - name: Generate Allure Report (history snapshot)
-        run: |
-          rm -rf .ci/allure-report-history
-          allure generate .ci/allure-results-merged/ -o .ci/allure-report-history/ --clean
-
-      - name: Prepare history cache payload
-        run: |
-          rm -rf .ci/allure-history
-          mkdir -p .ci/allure-history
-          if [ -d ".ci/allure-report-history/history" ]; then
-            cp -R .ci/allure-report-history/history .ci/allure-history/history
-            echo "Prepared history cache payload from generated report."
-          else
-            echo "No history directory produced by report generation."
-          fi
-
-      - name: Save updated Allure history
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: .ci/allure-history
-          key: ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-${{ github.run_id }}
-
-      - name: Upload Merged Allure Raw Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-merged
-          path: .ci/allure-results-merged/
-          retention-days: 30
-
-      - name: Upload Allure Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report
-          path: .ci/allure-report/
-          retention-days: 30

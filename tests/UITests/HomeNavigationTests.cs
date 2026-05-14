@@ -1,16 +1,10 @@
-using Allure.NUnit;
-using Allure.NUnit.Attributes;
-using Framework.Reporting;
+using Framework.Reports;
 using UITests.Pages;
 
 namespace UITests;
 
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [Parallelizable(ParallelScope.All)]
-[AllureNUnit]
-[AllureParentSuite("UITests")]
-[AllureSuite("Home Navigation")]
-[AllureFeature("Navigation")]
 [TestRole("user")]
 public class HomeNavigationTests : BaseTest
 {
@@ -29,7 +23,6 @@ public class HomeNavigationTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Featured events defaults")]
     public void HomePage_EventsWithDefaults()
     {
         var homePage = new HomePage(Driver, Wait);
@@ -66,7 +59,6 @@ public class HomeNavigationTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("Browse events route")]
     public void HomePage_NavigateToEventsPage()
     {
         var homePage = new HomePage(Driver, Wait);
@@ -83,7 +75,6 @@ public class HomeNavigationTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Bookings route")]
     public void HomePage_NavigateToBookingsPage()
     {
         var homePage = new HomePage(Driver, Wait);
@@ -99,7 +90,6 @@ public class HomeNavigationTests : BaseTest
     [Test]
     [Category("Sanity")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Featured events defaults data in Excel")]
     public void HomePage_EventsWithDefaults_Excel()
     {
         var row = LoadHomeValidationRow("HomePage_EventsWithDefaults");
@@ -132,7 +122,6 @@ public class HomeNavigationTests : BaseTest
     [Test]
     [Category("Sanity")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Events route data in Excel")]
     public void HomePage_NavigateToEventsPage_ExcelDataIsValid()
     {
         var row = LoadHomeValidationRow("HomePage_NavigateToEventsPage");
@@ -146,7 +135,6 @@ public class HomeNavigationTests : BaseTest
     [Test]
     [Category("Sanity")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Bookings route data in Excel")]
     public void HomePage_NavigateToBookingsPage_ExcelDataIsValid()
     {
         var row = LoadHomeValidationRow("HomePage_NavigateToBookingsPage");

@@ -1,16 +1,9 @@
-using Allure.NUnit;
-using Allure.NUnit.Attributes;
-using Allure.Net.Commons;
 using Framework.API;
-using Framework.Reporting;
+using Framework.Reports;
 
 namespace APITests;
 
 [Parallelizable(ParallelScope.Self)]
-[AllureNUnit]
-[AllureParentSuite("APITests")]
-[AllureSuite("Authentication API")]
-[AllureFeature("Authentication")]
 [TestRole("user")]
 public class AuthAPITests : APITestBase
 {
@@ -18,8 +11,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("Auth scenario: valid token")]
-    [AllureSeverity(SeverityLevel.critical)]
     public async Task AuthScenario_ValidToken_ShouldAccessProtectedEndpoint()
     {
         // Positive flow should use the suite login from setup, not perform login in test body.
@@ -40,8 +31,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Auth scenario: expired token")]
-    [AllureSeverity(SeverityLevel.normal)]
     [TestRole("user")]
     public async Task AuthScenario_ExpiredToken_ShouldFailProtectedEndpoint()
     {
@@ -61,8 +50,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Auth scenario: invalid token")]
-    [AllureSeverity(SeverityLevel.normal)]
     [TestRole("admin")]
     public async Task AuthScenario_InvalidToken_ShouldFailProtectedEndpoint()
     {
@@ -82,8 +69,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Auth scenario: missing token")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task AuthScenario_MissingToken_ShouldFailProtectedEndpoint()
     {
         var credentials = ResolveRoleCredentials();
@@ -102,8 +87,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Auth edge case: true state with expired scenario")]
-    [AllureSeverity(SeverityLevel.normal)]
     public void Login_WithTokenStateTrueAndExpiredScenario_ShouldThrow()
     {
         var credentials = ResolveRoleCredentials();
@@ -119,8 +102,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Auth edge case: true state with wrong credentials")]
-    [AllureSeverity(SeverityLevel.normal)]
     public void Login_WithTokenStateTrueAndWrongCredentials_ShouldThrow()
     {
         Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -136,8 +117,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("GET /api/auth/me")]
-    [AllureSeverity(SeverityLevel.critical)]
     [TestRole("admin")]
     public async Task MeEndpoint_WithValidToken_ShouldReturnCurrentUser()
     {
@@ -156,8 +135,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("AuthClient helpers: positive valid token flow")]
-    [AllureSeverity(SeverityLevel.critical)]
     public async Task AuthClientHelpers_WithValidToken_ShouldReportValidStateAndDetails()
     {
         var directAuthClient = new AuthClient(
@@ -214,8 +191,6 @@ public class AuthAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("POST /api/auth/login invalid payload")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task LoginEndpoint_WithInvalidPassword_ShouldReturnFailure()
     {
         var configured = await LoginAsync(

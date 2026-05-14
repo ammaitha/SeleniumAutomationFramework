@@ -1,12 +1,12 @@
 # Nightly Pipeline
 # Runs the full test suite every night at 02:00 UTC across all supported browsers.
-# Can also be triggered manually via workflow_dispatch — optionally limit to smoke tests.
+# Can also be triggered manually via workflow_dispatch and optionally limited to smoke tests.
 
 name: Nightly
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 02:00 UTC daily
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       suite:
@@ -25,7 +25,6 @@ env:
   BUILD_CONFIGURATION: 'Release'
 
 jobs:
-  # ── 1. Build ─────────────────────────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -49,7 +48,6 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}
 
-  # ── 2. API Tests ──────────────────────────────────────────────────────────────
   api-tests:
     name: API Tests
     needs: build
@@ -125,23 +123,6 @@ jobs:
             TEST_EXECUTION_ROLE="$DEFAULT_ROLE" dotnet test tests/APITests/APITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           fi
 
-      - name: Prepare API Allure Artifacts
-        if: always()
-        run: |
-          mkdir -p .ci/allure-results-api
-          rm -f .ci/allure-results-api/executor.json
-          echo "API Allure result files:"
-          find .ci/allure-results-api -type f | wc -l || echo "0"
-
-      - name: Upload Allure Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-api
-          path: reports/allure-results/
-          retention-days: 7
-
-  # ── 3. UI Tests (cross-browser matrix, ubuntu + windows for Edge) ─────────────
   ui-tests:
     name: UI Tests — ${{ matrix.browser }} (${{ matrix.os }})
     needs: build
@@ -293,116 +274,3 @@ jobs:
             Write-Host "Running full UI suite (no filter)"
             dotnet test tests/UITests/UITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           }
-
-      - name: Upload Allure Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-ui-${{ matrix.browser }}
-          path: reports/allure-results/
-          retention-days: 7
-
-  # ── 4. Allure Report (combined across all jobs) ───────────────────────────────
-  allure-report:
-    name: Allure Report
-    needs: [api-tests, ui-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Prepare merged output directories
-        run: |
-          rm -rf .ci/allure-results-merged .ci/allure-report
-          mkdir -p .ci/allure-results-merged .ci/allure-report
-
-      - name: Download all Allure results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: allure-results-*
-          path: .ci/allure-results-merged/
-          merge-multiple: true
-
-      - name: Restore previous Allure history
-        id: allure-history-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: .ci/allure-history
-          key: ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-
-
-      - name: Inject history into merged results
-        run: |
-          if [ -d ".ci/allure-history/history" ]; then
-            mkdir -p .ci/allure-results-merged/history
-            cp -R .ci/allure-history/history/. .ci/allure-results-merged/history/
-            echo "Restored history into merged results."
-          else
-            echo "No previous history cache found."
-          fi
-
-      - name: Normalize executor metadata for nightly run
-        run: |
-          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          cat > .ci/allure-results-merged/executor.json <<EOF
-          {
-            "name": "GitHub Actions",
-            "type": "github",
-            "reportName": "Selenium Automation Framework Allure Report - Run #${GITHUB_RUN_NUMBER}",
-            "buildName": "Run #${GITHUB_RUN_NUMBER}",
-            "buildOrder": ${GITHUB_RUN_NUMBER},
-            "buildUrl": "${RUN_URL}",
-            "reportUrl": "${RUN_URL}",
-            "description": "${GITHUB_WORKFLOW} (attempt ${GITHUB_RUN_ATTEMPT})"
-          }
-          EOF
-
-      - name: Install Allure CLI
-        run: |
-          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-          sudo tar -xzf allure.tgz -C /opt/
-          sudo ln -sf /opt/allure-2.27.0/bin/allure /usr/local/bin/allure
-
-      - name: Generate Allure Report
-        run: |
-          echo "Merged Allure result files:"
-          find .ci/allure-results-merged -type f | wc -l
-          allure generate .ci/allure-results-merged/ -o .ci/allure-report/ --clean --single-file
-
-      - name: Generate Allure Report (history snapshot)
-        run: |
-          rm -rf .ci/allure-report-history
-          allure generate .ci/allure-results-merged/ -o .ci/allure-report-history/ --clean
-
-      - name: Prepare history cache payload
-        run: |
-          rm -rf .ci/allure-history
-          mkdir -p .ci/allure-history
-          if [ -d ".ci/allure-report-history/history" ]; then
-            cp -R .ci/allure-report-history/history .ci/allure-history/history
-            echo "Prepared history cache payload from generated report."
-          else
-            echo "No history directory produced by report generation."
-          fi
-
-      - name: Save updated Allure history
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: .ci/allure-history
-          key: ${{ runner.os }}-allure-history-${{ github.workflow }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Upload Merged Allure Raw Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-merged-nightly
-          path: .ci/allure-results-merged/
-          retention-days: 30
-
-      - name: Upload Allure Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-nightly
-          path: .ci/allure-report/
-          retention-days: 30

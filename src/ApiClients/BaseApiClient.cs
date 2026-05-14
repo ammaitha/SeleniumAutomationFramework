@@ -1,8 +1,7 @@
 using System.Net;
 using System.Text;
-using Allure.Net.Commons;
 using Framework.API;
-using Framework.Reporting;
+using Framework.Reports;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -44,15 +43,15 @@ public abstract class BaseApiClient
         var relativeUrl = BuildRelativeUrl(path, queryParams);
         var capturedAccessToken = requiresAuth ? ApiSessionContext.Current.CurrentAccessToken : null;
 
-        return await AllureApi.Step($"{method} {relativeUrl}", async () =>
-        {
+        ReportManager.AddStep($"{method} {relativeUrl}");
+
             var requestBuilder = new APIRequestBuilder()
                 .WithMethod(method)
                 .WithEndpoint(relativeUrl);
 
             if (requiresAuth && !string.IsNullOrWhiteSpace(capturedAccessToken))
             {
-                // Capture token before entering Allure step to avoid AsyncLocal context loss.
+                // Capture token before entering the reporting step to avoid AsyncLocal context loss.
                 requestBuilder.WithBearerToken(capturedAccessToken);
             }
 
@@ -141,7 +140,6 @@ public abstract class BaseApiClient
             }
 
             return new ApiCallResult(response.StatusCode, responseBody);
-        });
     }
 
     protected static JObject ParseObject(ApiCallResult result)

@@ -1,17 +1,10 @@
-using Allure.NUnit;
-using Allure.NUnit.Attributes;
-using Allure.Net.Commons;
 using Framework.API;
-using Framework.Reporting;
+using Framework.Reports;
 using Newtonsoft.Json.Linq;
 
 namespace APITests;
 
 [Parallelizable(ParallelScope.Self)]
-[AllureNUnit]
-[AllureParentSuite("APITests")]
-[AllureSuite("Bookings API")]
-[AllureFeature("Bookings")]
 [TestRole("user")]
 public class BookingsAPITests : APITestBase
 {
@@ -19,8 +12,6 @@ public class BookingsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("POST/GET/DELETE /api/bookings")]
-    [AllureSeverity(SeverityLevel.critical)]
     public async Task CreateLookupAndCancelBooking()
     {
         EnsurePositiveAuthContextOrInconclusive("Bookings");
@@ -108,8 +99,6 @@ public class BookingsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("GET /api/bookings with query params")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task ListBookings_ShouldSupportPaginationStatusAndEventFilter()
     {
         EnsurePositiveAuthContextOrInconclusive("Bookings");
@@ -196,8 +185,6 @@ public class BookingsAPITests : APITestBase
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("POST /api/bookings invalid payload")]
-    [AllureSeverity(SeverityLevel.normal)]
     public async Task CreateBooking_WithInvalidPayload_ShouldReturnValidationError()
     {
         EnsurePositiveAuthContextOrInconclusive("Bookings");
