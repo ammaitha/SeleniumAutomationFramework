@@ -1,14 +1,7 @@
 using System.Collections.Concurrent;
 
-namespace Framework.Reporting;
+namespace Framework.Reports;
 
-/// <summary>
-/// Lightweight async-local state bag that spans the lifetime of a single test thread.
-/// Tracks the active browser name and test type (used as Allure labels), records the last
-/// API request/response exchange so it can be attached to failing tests, and accumulates the
-/// distinct browsers and test types seen across all threads for the run-level environment summary.
-/// Call <see cref="ClearTestScope"/> at the end of each test to reset per-test fields.
-/// </summary>
 public static class RuntimeContext
 {
     private static readonly AsyncLocal<string?> CurrentBrowserName = new();

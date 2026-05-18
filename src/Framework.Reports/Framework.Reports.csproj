@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -7,14 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Allure.Net.Commons" Version="2.14.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NUnit" Version="4.5.1" />
-    <PackageReference Include="Serilog" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="AllureHooks.cs" />
+    <!-- ReportHooks is linked directly into test projects and should not compile into the shared library. -->
+    <Compile Remove="ReportHooks.cs" />
   </ItemGroup>
 
 </Project>

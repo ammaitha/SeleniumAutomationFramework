@@ -1,4 +1,4 @@
-using Framework.Reporting;
+using Framework.Reports;
 using Serilog;
 
 namespace Framework.Core.Utilities;

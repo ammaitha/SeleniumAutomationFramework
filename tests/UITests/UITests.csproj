@@ -9,8 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Allure.NUnit" Version="2.14.1" />
-    <PackageReference Include="Allure.Net.Commons" Version="2.14.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="8.9.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
@@ -26,12 +24,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Framework.Core\Framework.Core.csproj" />
     <ProjectReference Include="..\..\src\Framework.Data\Framework.Data.csproj" />
-    <ProjectReference Include="..\..\src\Framework.Reporting\Framework.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\Framework.Reports\Framework.Reports.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\..\src\Pages\**\*.cs" Link="Pages\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\..\src\Framework.Reporting\AllureHooks.cs" Link="Infrastructure\AllureHooks.cs" />
+    <Compile Include="..\..\src\Framework.Reports\ReportHooks.cs" Link="Infrastructure\ReportHooks.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,9 +38,6 @@
 
   <ItemGroup>
     <None Include="..\..\config\appsettings.json" Link="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\config\allureConfig.json" Link="allureConfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\resources\testdata\loginData.json" Link="TestData\loginData.json">

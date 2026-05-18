@@ -4,14 +4,14 @@ using Framework.Core.Utilities;
 using Framework.Data;
 using Framework.API;
 using Framework.API.Clients;
-using Framework.Reporting;
+using Framework.Reports;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
 namespace APITests;
 
-public abstract class APITestBase : AllureTestBase
+public abstract class APITestBase : ReportTestBase
 {
     protected Serilog.ILogger Logger = Serilog.Log.Logger;
     protected HttpClient SharedHttpClient = null!;
@@ -712,11 +712,11 @@ public abstract class APITestBase : AllureTestBase
         
         try
         {
-            BeginAllureTest();
+            BeginReportTest();
         }
         catch (Exception ex)
         {
-            Logger.Warning("Failed to begin Allure test: {Message}", ex.Message);
+            Logger.Warning("Failed to begin report test: {Message}", ex.Message);
         }
         
         ReportHelper.BeginTest(TestContext.CurrentContext.Test.Name);
@@ -734,8 +734,8 @@ public abstract class APITestBase : AllureTestBase
         _executionTimer.Stop();
         var finishedAt = DateTimeOffset.Now;
         
-        // Attach any collected error information to Allure report
-        CompleteAllureTest();
+        // Attach any collected error information to the report
+        CompleteReportTest();
         Logger.Information("[API] Completing test {TestName} with status {Status}", TestContext.CurrentContext.Test.Name, outcome);
 
         var fullClassName = TestContext.CurrentContext.Test.ClassName ?? string.Empty;
@@ -755,8 +755,7 @@ public abstract class APITestBase : AllureTestBase
             errorMessage,
             null);
 
-        // Report is generated once per test run in global teardown (AllureBootstrap.FinalizeRun)
-
+        // Report is generated once per test run in global teardown.
         if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
         {
             Logger.Debug("[API] Test {TestName} completed with failure status", TestContext.CurrentContext.Test.Name);

@@ -136,13 +136,6 @@ stages:
               TEST_VIEWER_EMAIL: $(TEST_SHARED_EMAIL)
               TEST_VIEWER_PASSWORD: $(TEST_SHARED_PASSWORD)
 
-          - task: PublishPipelineArtifact@1
-            displayName: Upload Allure Results
-            condition: always()
-            inputs:
-              targetPath: reports/allure-results
-              artifact: allure-results-api
-
       # UI Tests — cross-browser matrix
       - job: UITests
         displayName: UI Tests — $(browser)
@@ -227,77 +220,3 @@ stages:
               TEST_VIEWER_PASSWORD: $(TEST_SHARED_PASSWORD)
               TestSettings__Browser: $(browser)
               TestSettings__Headless: 'true'
-
-          - task: PublishPipelineArtifact@1
-            displayName: Upload Allure Results
-            condition: always()
-            inputs:
-              targetPath: reports/allure-results
-              artifact: allure-results-ui-$(browser)
-
-  # ── Stage 3: Allure Report ────────────────────────────────────────────────────
-  - stage: Report
-    displayName: Allure Report
-    dependsOn: Test
-    condition: always()
-    jobs:
-      - job: GenerateReport
-        displayName: Generate and Publish Allure Report
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - task: DownloadPipelineArtifact@2
-            displayName: Download API Allure Results
-            continueOnError: true
-            inputs:
-              artifact: allure-results-api
-              path: $(System.DefaultWorkingDirectory)/reports/allure-results
-
-          - task: DownloadPipelineArtifact@2
-            displayName: Download Chrome Allure Results
-            continueOnError: true
-            inputs:
-              artifact: allure-results-ui-Chrome
-              path: $(System.DefaultWorkingDirectory)/reports/allure-results
-
-          - task: DownloadPipelineArtifact@2
-            displayName: Download Firefox Allure Results
-            continueOnError: true
-            inputs:
-              artifact: allure-results-ui-Firefox
-              path: $(System.DefaultWorkingDirectory)/reports/allure-results
-
-          - task: DownloadPipelineArtifact@2
-            displayName: Download Edge Allure Results
-            continueOnError: true
-            inputs:
-              artifact: allure-results-ui-Edge
-              path: $(System.DefaultWorkingDirectory)/reports/allure-results
-
-          - task: DownloadPipelineArtifact@2
-            displayName: Download Previous Allure History
-            continueOnError: true
-            inputs:
-              artifact: allure-history
-              path: $(System.DefaultWorkingDirectory)/reports/allure-results/history
-
-          - script: |
-              wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-              sudo tar -xzf allure.tgz -C /opt/
-              sudo ln -sf /opt/allure-2.27.0/bin/allure /usr/local/bin/allure
-            displayName: Install Allure CLI
-
-          - script: allure generate reports/allure-results -o reports/allure-report --clean
-            displayName: Generate Allure Report
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Allure Report
-            inputs:
-              targetPath: reports/allure-report
-              artifact: allure-report
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Allure History for Next Build
-            inputs:
-              targetPath: reports/allure-report/history
-              artifact: allure-history

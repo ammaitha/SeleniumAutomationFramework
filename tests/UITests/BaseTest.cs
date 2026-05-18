@@ -2,7 +2,7 @@ using Framework.Core.Configuration;
 using Framework.Core.Driver;
 using Framework.Core.Utilities;
 using Framework.Data;
-using Framework.Reporting;
+using Framework.Reports;
 using NUnit.Framework.Interfaces;
 using OpenQA.Selenium;
 using System.Diagnostics;
@@ -11,7 +11,7 @@ using UITests.Pages;
 namespace UITests;
 
 public abstract class BaseTest
-    : AllureTestBase
+    : ReportTestBase
 {
     protected Serilog.ILogger Logger = Serilog.Log.Logger;
     protected IWebDriver Driver => DriverManager.GetDriver();
@@ -44,7 +44,7 @@ public abstract class BaseTest
         RuntimeContext.TestType = "UI";
         RuntimeContext.BrowserName = _activeBrowser;
         Logger.Information("[UI] Browser resolved to {Browser}", _activeBrowser);
-        BeginAllureTest();
+        BeginReportTest();
         ReportHelper.BeginTest(TestContext.CurrentContext.Test.Name);
 
         try
@@ -160,7 +160,7 @@ public abstract class BaseTest
     {
         Logger.Information("[UI] Completing test {TestName}", TestContext.CurrentContext.Test.Name);
         string? screenshotPath = null;
-        var failureAttachments = new List<AllureAttachment>();
+        var failureAttachments = new List<ReportAttachment>();
         var fullClassName = TestContext.CurrentContext.Test.ClassName ?? string.Empty;
         var shortClassName = fullClassName.Contains('.') ? fullClassName[(fullClassName.LastIndexOf('.') + 1)..] : fullClassName;
 
@@ -175,9 +175,6 @@ public abstract class BaseTest
                         Driver,
                         Path.Combine(ReportHelper.GetReportsDirectory(), "screenshots"),
                         $"{shortClassName}_{TestContext.CurrentContext.Test.Name}");
-
-                    ReportHelper.AttachFile("Failure Screenshot", screenshotPath, "image/png");
-                    failureAttachments.Add(new AllureAttachment("Failure Screenshot", "image/png", FilePath: screenshotPath));
                     Logger.Information("[UI] Screenshot captured at {ScreenshotPath}", screenshotPath);
                 }
                 catch (InvalidOperationException)
@@ -190,7 +187,7 @@ public abstract class BaseTest
                     var pageSource = Driver.PageSource;
                     if (!string.IsNullOrWhiteSpace(pageSource))
                     {
-                        failureAttachments.Add(new AllureAttachment("Page Source", "text/html", Content: pageSource, FileExtension: "html"));
+                        failureAttachments.Add(new ReportAttachment("Page Source", "text/html", Content: pageSource, FileExtension: "html"));
                     }
                 }
                 catch (InvalidOperationException)
@@ -203,7 +200,7 @@ public abstract class BaseTest
             var errorMessage = TestContext.CurrentContext.Result.Message;
             _executionTimer.Stop();
             var finishedAt = DateTimeOffset.Now;
-            CompleteAllureTest(failureAttachments);
+            CompleteReportTest(failureAttachments);
 
             ReportHelper.RecordTestResult(
                 TestContext.CurrentContext.Test.Name,
@@ -219,7 +216,7 @@ public abstract class BaseTest
                 errorMessage,
                 screenshotPath);
 
-            // Report is generated once per test run in global teardown (AllureBootstrap.FinalizeRun)
+            // Report is generated once per test run in global teardown.
             Logger.Information("[UI] Test {TestName} finished with status {Status} in {DurationMs} ms",
                 TestContext.CurrentContext.Test.Name,
                 outcome,

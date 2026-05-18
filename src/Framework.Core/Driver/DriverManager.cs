@@ -6,7 +6,7 @@ using OpenQA.Selenium.Firefox;
 using Serilog;
 using WebDriverManager.DriverConfigs.Impl;
 using WebDriverManager.Helpers;
-using Framework.Reporting;
+using Framework.Reports;
 
 namespace Framework.Core.Driver;
 

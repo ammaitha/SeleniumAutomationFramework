@@ -1,17 +1,11 @@
-﻿using Allure.NUnit;
-using Allure.NUnit.Attributes;
-using UITests.Pages;
+﻿using UITests.Pages;
 using Framework.Core.Configuration;
-using Framework.Reporting;
+using Framework.Reports;
 
 namespace UITests;
 
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [Parallelizable(ParallelScope.All)]
-[AllureNUnit]
-[AllureParentSuite("UITests")]
-[AllureSuite("Login")]
-[AllureFeature("Authentication")]
 public class LoginTests : BaseTest
 {
     // Loaded once per test — all inputs and expected values come from loginData.json
@@ -27,7 +21,6 @@ public class LoginTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("Login page field visibility")]
     public void LoginPage_WithoutSigningIn_ShouldDisplayAllRequiredFields()
     {
         var loginPage = new LoginPage(Driver, Wait);
@@ -55,7 +48,6 @@ public class LoginTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("Role-based login")]
     public void Login_WithConfiguredRoleCredentials_ShouldAuthenticate(string role)
     {
         ReportHelper.AddStep($"Entering credentials for role '{role}'");
@@ -78,7 +70,6 @@ public class LoginTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Email validation")]
     public void Login_WithInvalidEmailFormat_ShouldShowEmailValidationError()
     {
         var scenario = _data.InvalidEmailScenario;
@@ -103,7 +94,6 @@ public class LoginTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.Medium)]
-    [AllureStory("Password validation")]
     public void Login_WithShortPassword_ShouldShowPasswordValidationError()
     {
         var scenario = _data.ShortPasswordScenario;
@@ -128,7 +118,6 @@ public class LoginTests : BaseTest
     [Category("High")]
     [Category("Smoke")]
     [Priority(TestPriority.High)]
-    [AllureStory("Required field validation")]
     public void Login_WithEmptyFields_ShouldShowBothValidationErrors()
     {
         var scenario = _data.EmptyFieldsScenario;
@@ -155,7 +144,6 @@ public class LoginTests : BaseTest
     [Test]
     [Category("Sanity")]
     [Priority(TestPriority.Low)]
-    [AllureStory("Wrong password rejection")]
     public void Login_WithWrongPassword_ShouldBeOnLoginPage()
     {
         var scenario = _data.WrongPasswordScenario;
@@ -170,7 +158,6 @@ public class LoginTests : BaseTest
     [Test]
     [Category("Sanity")]
     [Priority(TestPriority.Low)]
-    [AllureStory("Unregistered email rejection")]
     public void Login_WithUnregisteredEmail_ShouldBeOnLoginPage()
     {
         var scenario = _data.UnregisteredEmailScenario;

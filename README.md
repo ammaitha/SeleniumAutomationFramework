@@ -1,7 +1,6 @@
-
 # Selenium Automation Framework (C#)
 
-A reusable **enterprise-grade Selenium automation framework** built using **C#, .NET, and NUnit**.
+A reusable enterprise-grade Selenium automation framework built using **C#, .NET, and NUnit**.
 This framework is designed to support scalable **UI and API automation** across multiple web applications.
 
 ---
@@ -14,7 +13,7 @@ This framework is designed to support scalable **UI and API automation** across 
 - Data-driven testing (Excel / JSON)
 - Cross-browser execution
 - Parallel test execution
-- Structured reporting using **Allure**
+- Structured HTML reporting
 - CI/CD integration with **GitHub Actions**
 - Modular and extensible framework design
 
@@ -48,7 +47,7 @@ For full architecture details see:
     │   ├── Framework.Core
     │   ├── Framework.API
     │   ├── Framework.Data
-    │   └── Framework.Reporting
+    │   └── Framework.Reports
     │
     ├── tests
     │   ├── UITests
@@ -80,7 +79,7 @@ Test Framework: NUnit
 API Testing: HttpClient  
 Assertions: FluentAssertions  
 Logging: Serilog  
-Reporting: Allure Reports  
+Reporting: HTML Reports  
 Driver Management: WebDriverManager  
 IDE: Visual Studio Code  
 CI/CD: GitHub Actions  
@@ -117,7 +116,7 @@ From the project root:
 
 `dotnet test`
 
-For step-by-step execution options (suite-wise run, smoke run, headless run, and Allure report):
+For step-by-step execution options (suite-wise run, smoke run, headless run, and HTML report):
 
 - [docs/ExecutionGuide.md](docs/ExecutionGuide.md)
 
@@ -131,7 +130,7 @@ Automation pipelines will:
 
 - Run tests on pull requests
 - Execute scheduled regression runs
-- Publish Allure test reports
+- Publish execution artifacts
 
 Pipeline configurations are located in:
 
