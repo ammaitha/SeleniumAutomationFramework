@@ -6,7 +6,8 @@ internal sealed class SessionManager
 {
     private readonly string _reportsDirectory;
     private readonly string _sessionMarkerPath;
-    private static readonly TimeSpan SessionExpirationWindow = TimeSpan.FromSeconds(15);
+    private readonly string _aggregatePath;
+    private static readonly TimeSpan SessionExpirationWindow = ResolveSessionExpirationWindow();
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     private SessionMarker? _currentMarker;
@@ -18,6 +19,7 @@ internal sealed class SessionManager
     {
         _reportsDirectory = reportsDirectory;
         _sessionMarkerPath = Path.Combine(reportsDirectory, ".execution-session-marker.json");
+        _aggregatePath = Path.Combine(reportsDirectory, ".execution-report-aggregate.json");
     }
 
     public void Initialize()
@@ -42,6 +44,11 @@ internal sealed class SessionManager
 
     private bool ShouldStartNewSession(SessionMarker? marker)
     {
+        if (HasRecentAggregateHeartbeat())
+        {
+            return false;
+        }
+
         if (marker is null)
         {
             return true;
@@ -49,6 +56,38 @@ internal sealed class SessionManager
 
         var age = DateTimeOffset.UtcNow - marker.UpdatedAtUtc;
         return age > SessionExpirationWindow;
+    }
+
+    private bool HasRecentAggregateHeartbeat()
+    {
+        try
+        {
+            if (!File.Exists(_aggregatePath))
+            {
+                return false;
+            }
+
+            var lastWrite = File.GetLastWriteTimeUtc(_aggregatePath);
+            var age = DateTimeOffset.UtcNow - new DateTimeOffset(lastWrite, TimeSpan.Zero);
+            return age <= SessionExpirationWindow;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static TimeSpan ResolveSessionExpirationWindow()
+    {
+        const int defaultSeconds = 15;
+        var configuredValue = Environment.GetEnvironmentVariable("Reporting__SessionExpirationSeconds");
+
+        if (int.TryParse(configuredValue, out var seconds) && seconds > 0)
+        {
+            return TimeSpan.FromSeconds(seconds);
+        }
+
+        return TimeSpan.FromSeconds(defaultSeconds);
     }
 
     private void UpdateSessionMarker(bool isNewSession)

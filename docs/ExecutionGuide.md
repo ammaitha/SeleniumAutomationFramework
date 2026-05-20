@@ -6,6 +6,16 @@
 dotnet test
 ```
 
+### Recommended full-suite sequence (most stable)
+
+Use explicit per-suite commands in sequence to reduce project-level startup contention:
+
+```powershell
+dotnet test tests/HybridTests/HybridTests.csproj -v minimal
+dotnet test tests/APITests/APITests.csproj -v minimal
+dotnet test tests/UITests/UITests.csproj -v minimal
+```
+
 ## 2. Run API Tests Only
 
 ```bash

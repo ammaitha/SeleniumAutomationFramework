@@ -36,6 +36,7 @@ public static class DriverManager
 {
     // ThreadLocal makes the design ready for future parallel test execution.
     private static readonly ThreadLocal<IWebDriver?> DriverThread = new();
+    private static readonly object DriverBinarySetupLock = new();
 
     public static IWebDriver GetDriver()
     {
@@ -123,7 +124,10 @@ public static class DriverManager
 
     private static IWebDriver CreateChromeDriver(bool headless)
     {
-        new WebDriverManager.DriverManager().SetUpDriver(new ChromeConfig(), VersionResolveStrategy.MatchingBrowser);
+        lock (DriverBinarySetupLock)
+        {
+            new WebDriverManager.DriverManager().SetUpDriver(new ChromeConfig(), VersionResolveStrategy.MatchingBrowser);
+        }
 
         var options = new ChromeOptions();
         options.AddArgument("--disable-gpu");
@@ -140,7 +144,10 @@ public static class DriverManager
 
     private static IWebDriver CreateEdgeDriver(bool headless)
     {
-        new WebDriverManager.DriverManager().SetUpDriver(new EdgeConfig(), VersionResolveStrategy.MatchingBrowser);
+        lock (DriverBinarySetupLock)
+        {
+            new WebDriverManager.DriverManager().SetUpDriver(new EdgeConfig(), VersionResolveStrategy.MatchingBrowser);
+        }
 
         var options = new EdgeOptions();
         options.AddArgument("--disable-gpu");
@@ -158,7 +165,10 @@ public static class DriverManager
     {
         try
         {
-            new WebDriverManager.DriverManager().SetUpDriver(new FirefoxConfig(), VersionResolveStrategy.MatchingBrowser);
+            lock (DriverBinarySetupLock)
+            {
+                new WebDriverManager.DriverManager().SetUpDriver(new FirefoxConfig(), VersionResolveStrategy.MatchingBrowser);
+            }
             Log.Information("WebDriverManager successfully configured Firefox driver");
         }
         catch (Exception ex)

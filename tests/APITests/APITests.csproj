@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Framework.Core\Framework.Core.csproj" />
     <ProjectReference Include="..\..\src\Framework.Data\Framework.Data.csproj" />
     <ProjectReference Include="..\..\src\Framework.Reports\Framework.Reports.csproj" />
+    <ProjectReference Include="..\..\src\Framework.Contracts\Framework.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

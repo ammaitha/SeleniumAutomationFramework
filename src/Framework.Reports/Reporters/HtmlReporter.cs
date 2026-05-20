@@ -232,6 +232,7 @@ public sealed class HtmlReporter : IReporter
         var unspecifiedPriority = records.Count(r => string.Equals(NormalizePriority(r.Priority), "Unspecified", StringComparison.OrdinalIgnoreCase));
         var apiCount = records.Count(r => string.Equals(NormalizeTestType(r.TestType), "API", StringComparison.OrdinalIgnoreCase));
         var uiCount = records.Count(r => string.Equals(NormalizeTestType(r.TestType), "UI", StringComparison.OrdinalIgnoreCase));
+        var hybridCount = records.Count(r => string.Equals(NormalizeTestType(r.TestType), "Hybrid", StringComparison.OrdinalIgnoreCase));
         var otherTypeCount = records.Count(r => string.Equals(NormalizeTestType(r.TestType), "Other", StringComparison.OrdinalIgnoreCase));
         var duration = completedAt - aggregate.StartedAt;
 
@@ -239,9 +240,16 @@ public sealed class HtmlReporter : IReporter
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine("<html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>");
         sb.AppendLine("<title>Execution Report</title>");
-        sb.AppendLine("<style>body{font-family:Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#1f2937;margin:0}.page{max-width:1200px;margin:0 auto;padding:24px}.card{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:16px;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{font-size:28px;font-weight:700}.muted{color:#6b7280}.passed{color:#166534}.failed{color:#b91c1c}.skipped{color:#9a6700}.priority-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.priority{font-weight:700}.priority-high{color:#b91c1c}.priority-medium{color:#9a6700}.priority-low{color:#166534}.priority-unspecified{color:#6b7280}.type-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.type-api{color:#0f766e}.type-ui{color:#1d4ed8}.type-other{color:#6b7280}.type-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}.type-pill-api{background:#ccfbf1;color:#115e59}.type-pill-ui{background:#dbeafe;color:#1e40af}.type-pill-other{background:#e5e7eb;color:#374151}.stack{height:10px;border-radius:999px;overflow:hidden;background:#e5e7eb;display:flex}.stack-api{background:#14b8a6}.stack-ui{background:#3b82f6}.stack-other{background:#9ca3af}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;color:#6b7280}details{margin:0}ol{margin:8px 0 0;padding-left:18px}</style></head><body>");
+        sb.AppendLine($"<style>body{{font-family:Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#1f2937;margin:0}}.page{{max-width:1200px;margin:0 auto;padding:24px}}.card{{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:16px;margin-bottom:16px}}{ReportBranding.HeaderCss}.grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.metric{{font-size:28px;font-weight:700}}.muted{{color:#6b7280}}.passed{{color:#166534}}.failed{{color:#b91c1c}}.skipped{{color:#9a6700}}.priority-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.priority{{font-weight:700}}.priority-high{{color:#b91c1c}}.priority-medium{{color:#9a6700}}.priority-low{{color:#166534}}.priority-unspecified{{color:#6b7280}}.type-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.type-api{{color:#0f766e}}.type-ui{{color:#1d4ed8}}.type-hybrid{{color:#7c3aed}}.type-other{{color:#6b7280}}.type-pill{{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}}.type-pill-api{{background:#ccfbf1;color:#115e59}}.type-pill-ui{{background:#dbeafe;color:#1e40af}}.type-pill-hybrid{{background:#ede9fe;color:#5b21b6}}.type-pill-other{{background:#e5e7eb;color:#374151}}.stack{{height:10px;border-radius:999px;overflow:hidden;background:#e5e7eb;display:flex}}.stack-api{{background:#14b8a6}}.stack-ui{{background:#3b82f6}}.stack-hybrid{{background:#8b5cf6}}.stack-other{{background:#9ca3af}}table{{width:100%;border-collapse:collapse}}th,td{{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}}th{{font-size:12px;text-transform:uppercase;color:#6b7280}}details{{margin:0}}ol{{margin:8px 0 0;padding-left:18px}}</style></head><body>");
         sb.AppendLine("<div class='page'>");
-        sb.AppendLine($"<div class='card'><h1 style='margin:0 0 8px'>Automation Execution Report</h1><div class='muted'>Suite: {WebUtility.HtmlEncode(aggregate.SuiteName)} | Environment: {WebUtility.HtmlEncode(aggregate.Environment)} | Browser: {WebUtility.HtmlEncode(aggregate.Browser)}</div><div class='muted'>Started: {aggregate.StartedAt:yyyy-MM-dd HH:mm:ss zzz} | Ended: {completedAt:yyyy-MM-dd HH:mm:ss zzz} | Duration: {duration}</div></div>");
+        sb.AppendLine(ReportBranding.BuildHeaderCardHtml(
+            "Automation Execution Report",
+            aggregate.SuiteName,
+            aggregate.Environment,
+            aggregate.Browser,
+            aggregate.StartedAt,
+            completedAt,
+            duration));
         sb.AppendLine("<div class='grid'>");
         sb.AppendLine($"<div class='card'><div class='muted'>Total</div><div class='metric'>{total}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Passed</div><div class='metric passed'>{passed}</div></div>");
@@ -253,19 +261,22 @@ public sealed class HtmlReporter : IReporter
         sb.AppendLine("<div class='type-grid'>");
         sb.AppendLine($"<div class='card'><div class='muted'>API Tests</div><div class='metric type-api'>{apiCount}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>UI Tests</div><div class='metric type-ui'>{uiCount}</div></div>");
+        sb.AppendLine($"<div class='card'><div class='muted'>Hybrid Tests</div><div class='metric type-hybrid'>{hybridCount}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Other Tests</div><div class='metric type-other'>{otherTypeCount}</div></div>");
         sb.AppendLine("</div>");
         if (total > 0)
         {
             var apiPercent = Math.Round((double)apiCount * 100 / total, 2);
             var uiPercent = Math.Round((double)uiCount * 100 / total, 2);
-            var otherPercent = Math.Max(0, 100 - apiPercent - uiPercent);
+            var hybridPercent = Math.Round((double)hybridCount * 100 / total, 2);
+            var otherPercent = Math.Max(0, 100 - apiPercent - uiPercent - hybridPercent);
             sb.AppendLine("<div class='stack' style='margin-top:8px'>");
             sb.AppendLine($"<div class='stack-api' style='width:{apiPercent}%'></div>");
             sb.AppendLine($"<div class='stack-ui' style='width:{uiPercent}%'></div>");
+            sb.AppendLine($"<div class='stack-hybrid' style='width:{hybridPercent}%'></div>");
             sb.AppendLine($"<div class='stack-other' style='width:{otherPercent}%'></div>");
             sb.AppendLine("</div>");
-            sb.AppendLine($"<div class='muted' style='margin-top:6px'>API {apiPercent}% | UI {uiPercent}% | Other {otherPercent}%</div>");
+            sb.AppendLine($"<div class='muted' style='margin-top:6px'>API {apiPercent}% | UI {uiPercent}% | Hybrid {hybridPercent}% | Other {otherPercent}%</div>");
         }
         sb.AppendLine("</div>");
         sb.AppendLine("<div class='priority-grid'>");
@@ -283,6 +294,7 @@ public sealed class HtmlReporter : IReporter
             {
                 "API" => "type-pill type-pill-api",
                 "UI" => "type-pill type-pill-ui",
+                "Hybrid" => "type-pill type-pill-hybrid",
                 _ => "type-pill type-pill-other"
             };
             var stepMarkup = record.Steps.Count == 0
@@ -372,6 +384,7 @@ public sealed class HtmlReporter : IReporter
         {
             var value when value.Equals("API", StringComparison.OrdinalIgnoreCase) => "API",
             var value when value.Equals("UI", StringComparison.OrdinalIgnoreCase) => "UI",
+            var value when value.Equals("Hybrid", StringComparison.OrdinalIgnoreCase) => "Hybrid",
             _ => "Other"
         };
     }

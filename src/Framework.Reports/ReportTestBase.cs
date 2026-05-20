@@ -19,9 +19,10 @@ public abstract class ReportTestBase
         {
             var duration = DateTimeOffset.UtcNow - (_testStart.Value ?? DateTimeOffset.UtcNow);
             var outcome = TestContext.CurrentContext.Result.Outcome.Status;
+            var executionTestType = ResolveExecutionTestType();
 
             ReportManager.AddStep($"Browser={RuntimeContext.BrowserName}");
-            ReportManager.AddStep($"TestType={RuntimeContext.TestType}");
+            ReportManager.AddStep($"TestType={executionTestType}");
             ReportManager.AddStep($"Duration={duration.TotalSeconds:F2}s");
             ReportManager.AddStep($"Outcome={outcome}");
 
@@ -110,6 +111,28 @@ public abstract class ReportTestBase
         var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         return GetType().GetMethods(flags)
             .FirstOrDefault(method => string.Equals(method.Name, methodName, StringComparison.Ordinal));
+    }
+
+    public string ResolveExecutionTestType()
+    {
+        var className = TestContext.CurrentContext.Test.ClassName ?? string.Empty;
+
+        if (className.Contains("APITests", StringComparison.OrdinalIgnoreCase))
+        {
+            return "API";
+        }
+
+        if (className.Contains("UITests", StringComparison.OrdinalIgnoreCase))
+        {
+            return "UI";
+        }
+
+        if (className.Contains("HybridTests", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Hybrid";
+        }
+
+        return RuntimeContext.TestType;
     }
 
     private static void Attach(ReportAttachment attachment)

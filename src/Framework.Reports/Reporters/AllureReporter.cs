@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 using NUnit.Framework;
 
 namespace Framework.Reports.Reporters;
@@ -318,7 +319,8 @@ public sealed class AllureReporter : IReporter
 
         var apiCount = results.Count(r => r.Labels?.Any(l => l.Name == "testType" && l.Value == "API") ?? false);
         var uiCount = results.Count(r => r.Labels?.Any(l => l.Name == "testType" && l.Value == "UI") ?? false);
-        var otherCount = total - apiCount - uiCount;
+        var hybridCount = results.Count(r => r.Labels?.Any(l => l.Name == "testType" && l.Value == "Hybrid") ?? false);
+        var otherCount = total - apiCount - uiCount - hybridCount;
 
         var duration = finishedAt - startedAt;
 
@@ -326,33 +328,65 @@ public sealed class AllureReporter : IReporter
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine("<html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>");
         sb.AppendLine("<title>Allure Execution Report</title>");
-        sb.AppendLine("<style>body{font-family:Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#1f2937;margin:0}.page{max-width:1200px;margin:0 auto;padding:24px}.card{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:16px;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{font-size:28px;font-weight:700}.muted{color:#6b7280}.passed{color:#166534}.failed{color:#b91c1c}.skipped{color:#9a6700}.broken{color:#7c2d12}.priority-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.priority{font-weight:700}.priority-high{color:#b91c1c}.priority-medium{color:#9a6700}.priority-low{color:#166534}.priority-unspecified{color:#6b7280}.type-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.type-api{color:#0f766e}.type-ui{color:#1d4ed8}.type-other{color:#6b7280}.type-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}.type-pill-api{background:#ccfbf1;color:#115e59}.type-pill-ui{background:#dbeafe;color:#1e40af}.type-pill-other{background:#e5e7eb;color:#374151}.stack{height:10px;border-radius:999px;overflow:hidden;background:#e5e7eb;display:flex}.stack-api{background:#14b8a6}.stack-ui{background:#3b82f6}.stack-other{background:#9ca3af}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;color:#6b7280}details{margin:0}ol{margin:8px 0 0;padding-left:18px}</style></head><body>");
+        sb.AppendLine($"<style>body{{font-family:Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#1f2937;margin:0}}.page{{max-width:1200px;margin:0 auto;padding:24px}}.card{{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:16px;margin-bottom:16px}}{ReportBranding.HeaderCss}.grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.metric{{font-size:28px;font-weight:700}}.muted{{color:#6b7280}}.passed{{color:#166534}}.failed{{color:#b91c1c}}.skipped{{color:#9a6700}}.broken{{color:#7c2d12}}.priority-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.priority{{font-weight:700}}.priority-high{{color:#b91c1c}}.priority-medium{{color:#9a6700}}.priority-low{{color:#166534}}.priority-unspecified{{color:#6b7280}}.type-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}.type-api{{color:#0f766e}}.type-ui{{color:#1d4ed8}}.type-hybrid{{color:#7c3aed}}.type-other{{color:#6b7280}}.type-pill{{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}}.type-pill-api{{background:#ccfbf1;color:#115e59}}.type-pill-ui{{background:#dbeafe;color:#1e40af}}.type-pill-hybrid{{background:#ede9fe;color:#5b21b6}}.type-pill-other{{background:#e5e7eb;color:#374151}}.stack{{height:10px;border-radius:999px;overflow:hidden;background:#e5e7eb;display:flex}}.stack-api{{background:#14b8a6}}.stack-ui{{background:#3b82f6}}.stack-hybrid{{background:#8b5cf6}}.stack-other{{background:#9ca3af}}.chart-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}.pie-wrap{{position:relative;width:170px;height:170px;margin:8px auto 12px}}.pie-chart{{width:170px;height:170px;border-radius:50%;border:1px solid #e5e7eb}}.pie-center{{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;background:#fff;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:700;color:#111827}}.pie-legend{{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}.pie-legend li{{display:flex;align-items:center;gap:6px;font-size:13px}}.legend-swatch{{width:10px;height:10px;border-radius:50%;display:inline-block}}table{{width:100%;border-collapse:collapse}}th,td{{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}}th{{font-size:12px;text-transform:uppercase;color:#6b7280}}details{{margin:0}}ol{{margin:8px 0 0;padding-left:18px}}.attachments{{margin-top:8px}}.attachment-item{{margin-top:4px}}.attachment-pill{{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:600}}.attachment-inline{{color:#6b7280;font-size:12px;margin-left:4px}}@media (max-width:900px){{.grid,.priority-grid,.type-grid,.chart-grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}@media (max-width:640px){{.grid,.priority-grid,.type-grid,.chart-grid{{grid-template-columns:1fr}}.pie-legend{{grid-template-columns:1fr}}}}</style></head><body>");
         sb.AppendLine("<div class='page'>");
-        sb.AppendLine($"<div class='card'><h1 style='margin:0 0 8px'>Allure Execution Report</h1><div class='muted'>Suite: {WebUtility.HtmlEncode(_suiteName)} | Environment: {WebUtility.HtmlEncode(_environment)} | Browser: {WebUtility.HtmlEncode(_browser)}</div><div class='muted'>Started: {startedAt:yyyy-MM-dd HH:mm:ss zzz} | Ended: {finishedAt:yyyy-MM-dd HH:mm:ss zzz} | Duration: {duration}</div></div>");
+        sb.AppendLine(ReportBranding.BuildHeaderCardHtml(
+            "Allure Execution Report",
+            _suiteName,
+            _environment,
+            _browser,
+            startedAt,
+            finishedAt,
+            duration));
         sb.AppendLine("<div class='grid'>");
         sb.AppendLine($"<div class='card'><div class='muted'>Total</div><div class='metric'>{total}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Passed</div><div class='metric passed'>{passed}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Failed</div><div class='metric failed'>{failed}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Skipped</div><div class='metric skipped'>{skipped}</div></div>");
         sb.AppendLine("</div>");
+        sb.AppendLine("<div class='chart-grid'>");
+        sb.AppendLine(BuildPieChartMarkup(
+            "Result Distribution",
+            new List<PieSlice>
+            {
+                new("Passed", passed, "#16a34a"),
+                new("Failed", failed, "#dc2626"),
+                new("Skipped", skipped, "#ca8a04"),
+                new("Broken", broken, "#9a3412")
+            },
+            total));
+        sb.AppendLine(BuildPieChartMarkup(
+            "Test Type Distribution",
+            new List<PieSlice>
+            {
+                new("API", apiCount, "#14b8a6"),
+                new("UI", uiCount, "#3b82f6"),
+                new("Hybrid", hybridCount, "#8b5cf6"),
+                new("Other", otherCount, "#9ca3af")
+            },
+            total));
+        sb.AppendLine("</div>");
         sb.AppendLine("<div class='card'>");
         sb.AppendLine("<h2 style='margin-top:0'>Suite Distribution</h2>");
         sb.AppendLine("<div class='type-grid'>");
         sb.AppendLine($"<div class='card'><div class='muted'>API Tests</div><div class='metric type-api'>{apiCount}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>UI Tests</div><div class='metric type-ui'>{uiCount}</div></div>");
+        sb.AppendLine($"<div class='card'><div class='muted'>Hybrid Tests</div><div class='metric type-hybrid'>{hybridCount}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Other Tests</div><div class='metric type-other'>{otherCount}</div></div>");
         sb.AppendLine("</div>");
         if (total > 0)
         {
             var apiPercent = Math.Round((double)apiCount * 100 / total, 2);
             var uiPercent = Math.Round((double)uiCount * 100 / total, 2);
-            var otherPercent = Math.Max(0, 100 - apiPercent - uiPercent);
+            var hybridPercent = Math.Round((double)hybridCount * 100 / total, 2);
+            var otherPercent = Math.Max(0, 100 - apiPercent - uiPercent - hybridPercent);
             sb.AppendLine("<div class='stack' style='margin-top:8px'>");
             sb.AppendLine($"<div class='stack-api' style='width:{apiPercent}%'></div>");
             sb.AppendLine($"<div class='stack-ui' style='width:{uiPercent}%'></div>");
+            sb.AppendLine($"<div class='stack-hybrid' style='width:{hybridPercent}%'></div>");
             sb.AppendLine($"<div class='stack-other' style='width:{otherPercent}%'></div>");
             sb.AppendLine("</div>");
-            sb.AppendLine($"<div class='muted' style='margin-top:6px'>API {apiPercent}% | UI {uiPercent}% | Other {otherPercent}%</div>");
+            sb.AppendLine($"<div class='muted' style='margin-top:6px'>API {apiPercent}% | UI {uiPercent}% | Hybrid {hybridPercent}% | Other {otherPercent}%</div>");
         }
         sb.AppendLine("</div>");
         sb.AppendLine("<div class='priority-grid'>");
@@ -361,7 +395,7 @@ public sealed class AllureReporter : IReporter
         sb.AppendLine($"<div class='card'><div class='muted'>Low Priority</div><div class='metric priority priority-low'>{lowPriority}</div></div>");
         sb.AppendLine($"<div class='card'><div class='muted'>Unspecified Priority</div><div class='metric priority priority-unspecified'>{unspecifiedPriority}</div></div>");
         sb.AppendLine("</div>");
-        sb.AppendLine("<div class='card'><h2 style='margin-top:0'>Tests</h2><table><thead><tr><th>Test</th><th>Type</th><th>Status</th><th>Priority</th><th>Duration</th><th>Error</th><th>Attachments</th><th>Steps</th></tr></thead><tbody>");
+        sb.AppendLine("<div class='card'><h2 style='margin-top:0'>Tests</h2><table><thead><tr><th>Test</th><th>Type</th><th>Priority</th><th>Outcome</th><th>Duration</th><th>Error</th><th>Steps</th></tr></thead><tbody>");
 
         foreach (var result in results.OrderBy(r => r.Name))
         {
@@ -381,6 +415,7 @@ public sealed class AllureReporter : IReporter
             {
                 "API" => "type-pill type-pill-api",
                 "UI" => "type-pill type-pill-ui",
+                "Hybrid" => "type-pill type-pill-hybrid",
                 _ => "type-pill type-pill-other"
             };
             var testDuration = result.Stop > 0 && result.Start > 0
@@ -391,17 +426,21 @@ public sealed class AllureReporter : IReporter
             var stepMarkup = stepCount == 0
                 ? "<span class='muted'>No steps</span>"
                 : $"<details><summary>{stepCount} step(s)</summary><ol>{string.Join(string.Empty, (result.Steps ?? []).Select(s => $"<li>{WebUtility.HtmlEncode(s.Name ?? "")}</li>"))}</ol></details>";
-            var errorMarkup = BuildErrorMarkup(result.StatusDetails?.Message, result.StatusDetails?.Trace);
+
             var attachmentMarkup = BuildAttachmentMarkup(result.Attachments);
+            if (!string.IsNullOrWhiteSpace(attachmentMarkup) && !attachmentMarkup.Contains("None", StringComparison.OrdinalIgnoreCase))
+            {
+                stepMarkup += $"<div class='attachments'><span class='attachment-pill'>Attachments</span>{attachmentMarkup}</div>";
+            }
+            var errorMarkup = BuildErrorMarkup(result.StatusDetails?.Message, result.StatusDetails?.Trace);
 
             sb.AppendLine("<tr>");
             sb.AppendLine($"<td>{WebUtility.HtmlEncode(result.Name ?? "")}</td>");
             sb.AppendLine($"<td><span class='{typeBadgeClass}'>{WebUtility.HtmlEncode(testType)}</span></td>");
-            sb.AppendLine($"<td><span class='{statusClass}'>{WebUtility.HtmlEncode(status)}</span></td>");
             sb.AppendLine($"<td>{WebUtility.HtmlEncode(priority)}</td>");
+            sb.AppendLine($"<td><span class='{statusClass}'>{WebUtility.HtmlEncode(status)}</span></td>");
             sb.AppendLine($"<td>{testDuration}</td>");
             sb.AppendLine($"<td>{errorMarkup}</td>");
-            sb.AppendLine($"<td>{attachmentMarkup}</td>");
             sb.AppendLine($"<td>{stepMarkup}</td>");
             sb.AppendLine("</tr>");
         }
@@ -449,6 +488,36 @@ public sealed class AllureReporter : IReporter
         });
 
         return $"<details><summary>{attachments.Count} attachment(s)</summary><ol>{string.Join(string.Empty, items)}</ol></details>";
+    }
+
+    private static string BuildPieChartMarkup(string title, List<PieSlice> slices, int total)
+    {
+        var validSlices = slices.Where(s => s.Value > 0).ToList();
+        if (total <= 0 || validSlices.Count == 0)
+        {
+            return $"<div class='card'><h2 style='margin-top:0'>{WebUtility.HtmlEncode(title)}</h2><div class='muted'>No data available.</div></div>";
+        }
+
+        var gradientStops = new List<string>();
+        var legendItems = new List<string>();
+        var currentPercent = 0d;
+
+        foreach (var slice in validSlices)
+        {
+            var percent = (double)slice.Value * 100d / total;
+            var start = currentPercent;
+            var end = Math.Min(100d, currentPercent + percent);
+            var startText = start.ToString("0.##", CultureInfo.InvariantCulture);
+            var endText = end.ToString("0.##", CultureInfo.InvariantCulture);
+            gradientStops.Add($"{slice.Color} {startText}% {endText}%");
+
+            var percentText = percent.ToString("0.##", CultureInfo.InvariantCulture);
+            legendItems.Add($"<li><span class='legend-swatch' style='background:{slice.Color}'></span>{WebUtility.HtmlEncode(slice.Label)}: {slice.Value} ({percentText}%)</li>");
+            currentPercent = end;
+        }
+
+        var gradient = string.Join(", ", gradientStops);
+        return $"<div class='card'><h2 style='margin-top:0'>{WebUtility.HtmlEncode(title)}</h2><div class='pie-wrap'><div class='pie-chart' style='background:conic-gradient({gradient})'></div><div class='pie-center'>{total}</div></div><ul class='pie-legend'>{string.Join(string.Empty, legendItems)}</ul></div>";
     }
 
     private static string MapStatus(string? outcome)
@@ -615,4 +684,6 @@ public sealed class AllureReporter : IReporter
     }
 
     private sealed record AttachmentState(string Name, string Source, string Type);
+
+    private sealed record PieSlice(string Label, int Value, string Color);
 }
