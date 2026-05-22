@@ -26,24 +26,26 @@ public abstract class BaseTest
     protected string ApplicationBaseUrl => ConfigManager.GetString("TestSettings:BaseUrl");
     protected string LoginUrl => ConfigManager.GetString("TestSettings:AppUrl");
     protected string ConfiguredBrowser => ConfigManager.GetString("TestSettings:Browser");
+    protected virtual string ExecutionTestType => "UI";
 
     [SetUp]
     public void SetUp()
     {
+        var executionTestType = ExecutionTestType;
         _testStartedAt = DateTimeOffset.Now;
         _executionTimer.Restart();
         _activeBrowser = Environment.GetEnvironmentVariable("TestSettings__Browser") ?? ConfiguredBrowser;
         _priority = GetCurrentPriorityLevel()?.ToString() ?? "Unspecified";
         _suiteName = GetCurrentSuiteName();
 
-        var executionLogger = TestLogger.CreateExecutionLogger("UI", _suiteName, TestContext.CurrentContext.Test.Name);
+        var executionLogger = TestLogger.CreateExecutionLogger(executionTestType, _suiteName, TestContext.CurrentContext.Test.Name);
         Logger = executionLogger.ForContext<BaseTest>();
         _executionLoggerHandle = executionLogger as IDisposable;
 
-        Logger.Information("[UI] Starting test {TestName}", TestContext.CurrentContext.Test.Name);
-        RuntimeContext.TestType = "UI";
+        Logger.Information("[{TestType}] Starting test {TestName}", executionTestType, TestContext.CurrentContext.Test.Name);
+        RuntimeContext.TestType = executionTestType;
         RuntimeContext.BrowserName = _activeBrowser;
-        Logger.Information("[UI] Browser resolved to {Browser}", _activeBrowser);
+        Logger.Information("[{TestType}] Browser resolved to {Browser}", executionTestType, _activeBrowser);
         BeginReportTest();
         ReportHelper.BeginTest(TestContext.CurrentContext.Test.Name);
 
@@ -53,7 +55,7 @@ public abstract class BaseTest
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "[UI] Driver initialization failed for browser {Browser}", _activeBrowser);
+            Logger.Error(ex, "[{TestType}] Driver initialization failed for browser {Browser}", executionTestType, _activeBrowser);
             throw new InvalidOperationException(
                 $"Failed to initialize {_activeBrowser} WebDriver. " +
                 $"Ensure the browser is installed on your system. " +
@@ -64,7 +66,7 @@ public abstract class BaseTest
 
         Driver.Navigate().GoToUrl(LoginUrl);
         Wait.WaitForPageLoaded();
-        Logger.Information("[UI] Navigated to login URL {LoginUrl}", LoginUrl);
+        Logger.Information("[{TestType}] Navigated to login URL {LoginUrl}", executionTestType, LoginUrl);
 
         // Log actual browser being used (may differ from config if overridden via env var)
         ReportHelper.AddStep($"Browser: {_activeBrowser}");
@@ -158,7 +160,8 @@ public abstract class BaseTest
     [TearDown]
     public void TearDown()
     {
-        Logger.Information("[UI] Completing test {TestName}", TestContext.CurrentContext.Test.Name);
+        var executionTestType = ExecutionTestType;
+        Logger.Information("[{TestType}] Completing test {TestName}", executionTestType, TestContext.CurrentContext.Test.Name);
         string? screenshotPath = null;
         var failureAttachments = new List<ReportAttachment>();
         var fullClassName = TestContext.CurrentContext.Test.ClassName ?? string.Empty;
@@ -168,14 +171,14 @@ public abstract class BaseTest
         {
             if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
             {
-                Logger.Warning("[UI] Test {TestName} failed. Capturing artifacts.", TestContext.CurrentContext.Test.Name);
+                Logger.Warning("[{TestType}] Test {TestName} failed. Capturing artifacts.", executionTestType, TestContext.CurrentContext.Test.Name);
                 try
                 {
                     screenshotPath = ScreenshotHelper.CaptureScreenshot(
                         Driver,
                         Path.Combine(ReportHelper.GetReportsDirectory(), "screenshots"),
                         $"{shortClassName}_{TestContext.CurrentContext.Test.Name}");
-                    Logger.Information("[UI] Screenshot captured at {ScreenshotPath}", screenshotPath);
+                    Logger.Information("[{TestType}] Screenshot captured at {ScreenshotPath}", executionTestType, screenshotPath);
                 }
                 catch (InvalidOperationException)
                 {
@@ -209,7 +212,7 @@ public abstract class BaseTest
                 outcome,
                 _executionTimer.Elapsed,
                 _activeBrowser,
-                "UI",
+                executionTestType,
                 _priority,
                 _testStartedAt,
                 finishedAt,
@@ -217,7 +220,8 @@ public abstract class BaseTest
                 screenshotPath);
 
             // Report is generated once per test run in global teardown.
-            Logger.Information("[UI] Test {TestName} finished with status {Status} in {DurationMs} ms",
+            Logger.Information("[{TestType}] Test {TestName} finished with status {Status} in {DurationMs} ms",
+                executionTestType,
                 TestContext.CurrentContext.Test.Name,
                 outcome,
                 _executionTimer.Elapsed.TotalMilliseconds);
@@ -235,7 +239,8 @@ public abstract class BaseTest
 
             if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
             {
-                Logger.Warning("[UI] Test {TestName} failed with message: {Message}",
+                Logger.Warning("[{TestType}] Test {TestName} failed with message: {Message}",
+                    executionTestType,
                     TestContext.CurrentContext.Test.Name,
                     TestContext.CurrentContext.Result.Message);
             }

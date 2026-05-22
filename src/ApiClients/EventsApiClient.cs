@@ -1,15 +1,14 @@
-using Framework.API;
-using APITests;
+using Framework.Contracts;
 
 namespace Framework.API.Clients;
 
 public sealed class EventsApiClient(
     APIClient apiClient,
     Serilog.ILogger logger,
-    ApiSuiteData.EndpointData.EventEndpointData endpoints)
+    EndpointData.EventEndpointData endpoints)
     : BaseApiClient(apiClient, logger)
 {
-    private readonly ApiSuiteData.EndpointData.EventEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Event endpoint data cannot be null.");
+    private readonly EndpointData.EventEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Event endpoint data cannot be null.");
 
     public Task<ApiCallResult> ListEventsAsync(
         int page,

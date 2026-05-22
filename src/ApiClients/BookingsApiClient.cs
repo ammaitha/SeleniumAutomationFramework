@@ -1,15 +1,14 @@
-using Framework.API;
-using APITests;
+using Framework.Contracts;
 
 namespace Framework.API.Clients;
 
 public sealed class BookingsApiClient(
     APIClient apiClient,
     Serilog.ILogger logger,
-    ApiSuiteData.EndpointData.BookingEndpointData endpoints)
+    EndpointData.BookingEndpointData endpoints)
     : BaseApiClient(apiClient, logger)
 {
-    private readonly ApiSuiteData.EndpointData.BookingEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Booking endpoint data cannot be null.");
+    private readonly EndpointData.BookingEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Booking endpoint data cannot be null.");
 
     public Task<ApiCallResult> ListBookingsAsync(
         int page,

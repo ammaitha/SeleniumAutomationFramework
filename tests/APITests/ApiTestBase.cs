@@ -1,10 +1,11 @@
-﻿using NUnit.Framework.Interfaces;
+using NUnit.Framework.Interfaces;
 using Framework.Core.Configuration;
 using Framework.Core.Utilities;
 using Framework.Data;
 using Framework.API;
 using Framework.API.Clients;
 using Framework.Reports;
+using Framework.Contracts;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
@@ -181,9 +182,8 @@ public abstract class APITestBase : ReportTestBase
         Assert.That(authData, Is.Not.Null, "ApiAuthData cannot be null. Ensure apiAuth section exists in loginData.json.");
         Assert.That(authData.Endpoints, Is.Not.Null, "authData.Endpoints cannot be null.");
         Assert.That(authData.Assertions, Is.Not.Null, "authData.Assertions cannot be null.");
-        
-        Assert.That(authData.Endpoints.Login, Is.Not.Null.And.Not.Empty, "apiAuth.endpoints.login is required in loginData.json");
-        Assert.That(authData.Endpoints.Me, Is.Not.Null.And.Not.Empty, "apiAuth.endpoints.me is required in loginData.json");
+
+        ValidateAuthEndpoints(authData.Endpoints, "loginData.json");
         Assert.That(authData.Assertions.TokenJsonPath, Is.Not.Null.And.Not.Empty, "apiAuth.assertions.tokenJsonPath is required in loginData.json");
         Assert.That(authData.Assertions.CurrentUserEmailJsonPath, Is.Not.Null.And.Not.Empty, "apiAuth.assertions.currentUserEmailJsonPath is required in loginData.json");
 
@@ -201,12 +201,7 @@ public abstract class APITestBase : ReportTestBase
 
         return new ApiSuiteData
         {
-            Endpoints = new ApiSuiteData.EndpointData
-            {
-                Auth = authData.Endpoints,
-                Events = eventData.Endpoints,
-                Bookings = bookingData.Endpoints
-            },
+            Endpoints = BuildEndpointData(authData.Endpoints, eventData.Endpoints, bookingData.Endpoints),
             Events = eventData.Events,
             Bookings = bookingData.Bookings,
             Queries = new ApiSuiteData.QueryData
@@ -234,13 +229,9 @@ public abstract class APITestBase : ReportTestBase
 
         var data = JsonDataProvider.Read<EventApiDataModel>(path);
         Assert.That(data, Is.Not.Null, "eventData.json must be valid JSON and deserializable to EventApiDataModel.");
-        
+
         Assert.That(data!.Endpoints, Is.Not.Null, "data.Endpoints cannot be null in eventData.json.");
-        Assert.That(data.Endpoints.List, Is.Not.Null.And.Not.Empty, "endpoints.list is required in eventData.json");
-        Assert.That(data.Endpoints.Create, Is.Not.Null.And.Not.Empty, "endpoints.create is required in eventData.json");
-        Assert.That(data.Endpoints.GetById, Is.Not.Null.And.Not.Empty, "endpoints.getById is required in eventData.json");
-        Assert.That(data.Endpoints.UpdateById, Is.Not.Null.And.Not.Empty, "endpoints.updateById is required in eventData.json");
-        Assert.That(data.Endpoints.DeleteById, Is.Not.Null.And.Not.Empty, "endpoints.deleteById is required in eventData.json");
+        ValidateEventEndpoints(data.Endpoints, "eventData.json");
         
         Assert.That(data.Events, Is.Not.Null, "data.Events cannot be null in eventData.json.");
         Assert.That(data.Events.CreatePayload, Is.Not.Null.And.Property("HasValues").True, "events.createPayload with valid structure is required in eventData.json");
@@ -261,13 +252,9 @@ public abstract class APITestBase : ReportTestBase
 
         var data = JsonDataProvider.Read<BookingApiDataModel>(path);
         Assert.That(data, Is.Not.Null, "bookingData.json must be valid JSON and deserializable to BookingApiDataModel.");
-        
+
         Assert.That(data!.Endpoints, Is.Not.Null, "data.Endpoints cannot be null in bookingData.json.");
-        Assert.That(data.Endpoints.List, Is.Not.Null.And.Not.Empty, "endpoints.list is required in bookingData.json");
-        Assert.That(data.Endpoints.Create, Is.Not.Null.And.Not.Empty, "endpoints.create is required in bookingData.json");
-        Assert.That(data.Endpoints.GetById, Is.Not.Null.And.Not.Empty, "endpoints.getById is required in bookingData.json");
-        Assert.That(data.Endpoints.GetByReference, Is.Not.Null.And.Not.Empty, "endpoints.getByReference is required in bookingData.json");
-        Assert.That(data.Endpoints.CancelById, Is.Not.Null.And.Not.Empty, "endpoints.cancelById is required in bookingData.json");
+        ValidateBookingEndpoints(data.Endpoints, "bookingData.json");
         
         Assert.That(data.Bookings, Is.Not.Null, "data.Bookings cannot be null in bookingData.json.");
         Assert.That(data.Bookings.SupportingEventPayload, Is.Not.Null.And.Property("HasValues").True, "bookings.supportingEventPayload with valid structure is required in bookingData.json");
@@ -313,7 +300,7 @@ public abstract class APITestBase : ReportTestBase
         // NUnit runs [SetUp] and the test body in separate ExecutionContext instances, so AsyncLocal
         // values written in [SetUp] are NOT visible in the test body. Calling this method from the
         // test body re-injects the suite token into the current execution context without network cost.
-        // Only applies when the caller supplies the same credentials used for the suite login —
+        // Only applies when the caller supplies the same credentials used for the suite login -
         // if different credentials are provided the request must go to the network so the server
         // can reject them (e.g. wrong-password negative tests).
         if (tokenState
@@ -543,6 +530,47 @@ public abstract class APITestBase : ReportTestBase
 
         token = null;
         return false;
+    }
+
+    private static EndpointData BuildEndpointData(
+        EndpointData.AuthEndpointData authEndpoints,
+        EndpointData.EventEndpointData eventEndpoints,
+        EndpointData.BookingEndpointData bookingEndpoints)
+    {
+        ArgumentNullException.ThrowIfNull(authEndpoints);
+        ArgumentNullException.ThrowIfNull(eventEndpoints);
+        ArgumentNullException.ThrowIfNull(bookingEndpoints);
+
+        return new EndpointData
+        {
+            Auth = authEndpoints,
+            Events = eventEndpoints,
+            Bookings = bookingEndpoints
+        };
+    }
+
+    private static void ValidateAuthEndpoints(EndpointData.AuthEndpointData endpoints, string sourceFile)
+    {
+        Assert.That(endpoints.Login, Is.Not.Null.And.Not.Empty, $"apiAuth.endpoints.login is required in {sourceFile}");
+        Assert.That(endpoints.Me, Is.Not.Null.And.Not.Empty, $"apiAuth.endpoints.me is required in {sourceFile}");
+    }
+
+    private static void ValidateEventEndpoints(EndpointData.EventEndpointData endpoints, string sourceFile)
+    {
+        Assert.That(endpoints.List, Is.Not.Null.And.Not.Empty, $"endpoints.list is required in {sourceFile}");
+        Assert.That(endpoints.Create, Is.Not.Null.And.Not.Empty, $"endpoints.create is required in {sourceFile}");
+        Assert.That(endpoints.GetById, Is.Not.Null.And.Not.Empty, $"endpoints.getById is required in {sourceFile}");
+        Assert.That(endpoints.UpdateById, Is.Not.Null.And.Not.Empty, $"endpoints.updateById is required in {sourceFile}");
+        Assert.That(endpoints.DeleteById, Is.Not.Null.And.Not.Empty, $"endpoints.deleteById is required in {sourceFile}");
+    }
+
+    private static void ValidateBookingEndpoints(EndpointData.BookingEndpointData endpoints, string sourceFile)
+    {
+        Assert.That(endpoints.List, Is.Not.Null.And.Not.Empty, $"endpoints.list is required in {sourceFile}");
+        Assert.That(endpoints.Create, Is.Not.Null.And.Not.Empty, $"endpoints.create is required in {sourceFile}");
+        Assert.That(endpoints.GetById, Is.Not.Null.And.Not.Empty, $"endpoints.getById is required in {sourceFile}");
+        Assert.That(endpoints.GetByReference, Is.Not.Null.And.Not.Empty, $"endpoints.getByReference is required in {sourceFile}");
+        Assert.That(endpoints.CancelById, Is.Not.Null.And.Not.Empty, $"endpoints.cancelById is required in {sourceFile}");
     }
 
     protected JObject BuildPayload(JObject template, IDictionary<string, JToken>? variables = null)
@@ -786,7 +814,7 @@ public sealed class LoginDataModel
 
 public sealed class ApiAuthData
 {
-    public ApiSuiteData.EndpointData.AuthEndpointData Endpoints { get; set; } = new();
+    public EndpointData.AuthEndpointData Endpoints { get; set; } = new();
     public ApiAuthAssertionData Assertions { get; set; } = new();
 
     public sealed class ApiAuthAssertionData
@@ -798,7 +826,7 @@ public sealed class ApiAuthData
 
 public sealed class EventApiDataModel
 {
-    public ApiSuiteData.EndpointData.EventEndpointData Endpoints { get; set; } = new();
+    public EndpointData.EventEndpointData Endpoints { get; set; } = new();
     public ApiSuiteData.EventData Events { get; set; } = new();
     public ApiSuiteData.QueryData.EventQueryData Queries { get; set; } = new();
     public ApiSuiteData.AssertionData.EventAssertionData Assertions { get; set; } = new();
@@ -806,7 +834,7 @@ public sealed class EventApiDataModel
 
 public sealed class BookingApiDataModel
 {
-    public ApiSuiteData.EndpointData.BookingEndpointData Endpoints { get; set; } = new();
+    public EndpointData.BookingEndpointData Endpoints { get; set; } = new();
     public ApiSuiteData.BookingData Bookings { get; set; } = new();
     public ApiSuiteData.QueryData.BookingQueryData Queries { get; set; } = new();
     public ApiSuiteData.AssertionData.BookingAssertionData Assertions { get; set; } = new();
@@ -820,36 +848,7 @@ public sealed class ApiSuiteData
     public QueryData Queries { get; set; } = new();
     public AssertionData Assertions { get; set; } = new();
 
-    public sealed class EndpointData
-    {
-        public AuthEndpointData Auth { get; set; } = new();
-        public EventEndpointData Events { get; set; } = new();
-        public BookingEndpointData Bookings { get; set; } = new();
-
-        public sealed class AuthEndpointData
-        {
-            public string Login { get; set; } = string.Empty;
-            public string Me { get; set; } = string.Empty;
-        }
-
-        public sealed class EventEndpointData
-        {
-            public string List { get; set; } = string.Empty;
-            public string Create { get; set; } = string.Empty;
-            public string GetById { get; set; } = string.Empty;
-            public string UpdateById { get; set; } = string.Empty;
-            public string DeleteById { get; set; } = string.Empty;
-        }
-
-        public sealed class BookingEndpointData
-        {
-            public string List { get; set; } = string.Empty;
-            public string Create { get; set; } = string.Empty;
-            public string GetById { get; set; } = string.Empty;
-            public string GetByReference { get; set; } = string.Empty;
-            public string CancelById { get; set; } = string.Empty;
-        }
-    }
+    // EndpointData and nested endpoint classes are now in Framework.Contracts
 
     public sealed class EventData
     {

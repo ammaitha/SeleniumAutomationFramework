@@ -1,4 +1,4 @@
-using System;
+using Newtonsoft.Json.Linq;
 
 namespace Framework.API;
 
@@ -172,6 +172,35 @@ public sealed class ApiSessionContext
         var context = _currentContext.Value;
         context?.ClearStoredCredentials();
         _currentContext.Value = null;
+    }
+
+    /// <summary>
+    /// Fetches the current user payload from an authenticated identity endpoint and returns it as compact JSON.
+    /// This is useful when bootstrapping UI session storage from API-authenticated context.
+    /// </summary>
+    public static string FetchCurrentUserJson(
+        APIClient apiClient,
+        string meEndpoint,
+        string authToken,
+        string primaryPath = "user",
+        string fallbackPath = "data")
+    {
+        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentException.ThrowIfNullOrWhiteSpace(meEndpoint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(authToken);
+
+        var meRequest = new APIRequestBuilder()
+            .WithMethod(HttpMethod.Get)
+            .WithEndpoint(meEndpoint)
+            .WithBearerToken(authToken)
+            .Build();
+
+        var meHttpResponse = apiClient.SendAsync(meRequest).GetAwaiter().GetResult();
+        var meBody = meHttpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var meJson = JObject.Parse(meBody);
+
+        return (meJson.SelectToken(primaryPath) ?? meJson.SelectToken(fallbackPath) ?? new JObject())
+            .ToString(Newtonsoft.Json.Formatting.None);
     }
 
     /// <summary>

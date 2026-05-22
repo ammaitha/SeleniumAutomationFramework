@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -7,7 +6,6 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="8.9.0" />
@@ -20,41 +18,31 @@
     <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="WebDriverManager" Version="2.17.7" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\Framework.API\Framework.API.csproj" />
     <ProjectReference Include="..\..\src\Framework.Core\Framework.Core.csproj" />
     <ProjectReference Include="..\..\src\Framework.Data\Framework.Data.csproj" />
     <ProjectReference Include="..\..\src\Framework.Reports\Framework.Reports.csproj" />
     <ProjectReference Include="..\..\src\Framework.Contracts\Framework.Contracts.csproj" />
+    <ProjectReference Include="..\UITests\UITests.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="..\..\src\ApiClients\**\*.cs" Link="ApiClients\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Pages\**\*.cs" Link="Pages\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Framework.Reports\ReportHooks.cs" Link="Infrastructure\ReportHooks.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="NUnit.Framework" />
-  </ItemGroup>
-
   <ItemGroup>
     <None Include="..\..\config\appsettings.json" Link="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\resources\testdata\loginData.json" Link="TestData\loginData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\resources\testdata\eventData.json" Link="TestData\eventData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\resources\testdata\homePageData.json" Link="TestData\homePageData.json">
+    <None Include="..\..\resources\testdata\bookingData.json" Link="TestData\bookingData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\resources\testdata\HomeNavigationValidationData.xlsx" Link="TestData\HomeNavigationValidationData.xlsx">
+    <None Include="..\..\resources\testdata\loginData.json" Link="TestData\loginData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
 </Project>

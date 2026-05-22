@@ -1,15 +1,14 @@
-using Framework.API;
-using APITests;
+using Framework.Contracts;
 
 namespace Framework.API.Clients;
 
 public sealed class AuthApiClient(
     APIClient apiClient,
     Serilog.ILogger logger,
-    ApiSuiteData.EndpointData.AuthEndpointData endpoints)
+    EndpointData.AuthEndpointData endpoints)
     : BaseApiClient(apiClient, logger)
 {
-    private readonly ApiSuiteData.EndpointData.AuthEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Auth endpoint data cannot be null.");
+    private readonly EndpointData.AuthEndpointData _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints), "Auth endpoint data cannot be null.");
 
     public Task<ApiCallResult> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
