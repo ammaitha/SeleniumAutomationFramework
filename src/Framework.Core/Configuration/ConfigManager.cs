@@ -48,6 +48,18 @@ public static class ConfigManager
         throw new InvalidOperationException($"Config key '{key}' has invalid bool value: {value}");
     }
 
+    public static bool GetBoolOrDefault(string key, bool defaultValue = false)
+    {
+        var value = ConfigRoot.Value[key];
+        if (string.IsNullOrWhiteSpace(value))
+            return defaultValue;
+
+        if (bool.TryParse(value, out var parsed))
+            return parsed;
+
+        return defaultValue;
+    }
+
     public static IConfigurationRoot LoadConfiguration(string? env = null, string? baseUrl = null, string? appUrl = null)
     {
         var baseConfiguration = new ConfigurationBuilder()

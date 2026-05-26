@@ -135,6 +135,17 @@ stages:
               TEST_ORGANIZER_PASSWORD: $(TEST_SHARED_PASSWORD)
               TEST_VIEWER_EMAIL: $(TEST_SHARED_EMAIL)
               TEST_VIEWER_PASSWORD: $(TEST_SHARED_PASSWORD)
+              Reporting__ActiveReporter: Html
+              TestSettings__SuiteName: CI - API Tests
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish HTML Report — API Tests
+            condition: always()
+            continueOnError: true
+            inputs:
+              targetPath: reports/execution-report.html
+              artifact: html-report-api
+              publishLocation: pipeline
 
       # UI Tests — cross-browser matrix
       - job: UITests
@@ -220,3 +231,14 @@ stages:
               TEST_VIEWER_PASSWORD: $(TEST_SHARED_PASSWORD)
               TestSettings__Browser: $(browser)
               TestSettings__Headless: 'true'
+              Reporting__ActiveReporter: Html
+              TestSettings__SuiteName: 'CI - UI Tests ($(browser))'
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish HTML Report — UI Tests ($(browser))
+            condition: always()
+            continueOnError: true
+            inputs:
+              targetPath: reports/execution-report.html
+              artifact: 'html-report-ui-$(browser)'
+              publishLocation: pipeline

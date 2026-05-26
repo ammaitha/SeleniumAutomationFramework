@@ -84,6 +84,8 @@ jobs:
           TEST_VIEWER_EMAIL: ${{ secrets.TEST_SHARED_EMAIL }}
           TEST_VIEWER_PASSWORD: ${{ secrets.TEST_SHARED_PASSWORD }}
           SUITE: ${{ github.event.inputs.suite || 'full' }}
+          Reporting__ActiveReporter: Html
+          TestSettings__SuiteName: Nightly - API Tests
         run: |
           if [ "$SUITE" = "smoke" ]; then
             COMMON_FILTER="Category=High&Category=Smoke"
@@ -122,6 +124,14 @@ jobs:
             echo "Running full API suite (no filter)"
             TEST_EXECUTION_ROLE="$DEFAULT_ROLE" dotnet test tests/APITests/APITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           fi
+
+      - name: Upload HTML Report — API Tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-api
+          path: reports/execution-report.html
+          if-no-files-found: warn
 
   ui-tests:
     name: UI Tests — ${{ matrix.browser }} (${{ matrix.os }})
@@ -181,6 +191,8 @@ jobs:
           TestSettings__Browser: ${{ matrix.browser }}
           TestSettings__Headless: 'true'
           SUITE: ${{ github.event.inputs.suite || 'full' }}
+          Reporting__ActiveReporter: Html
+          TestSettings__SuiteName: 'Nightly - UI Tests (${{ matrix.browser }})'
         run: |
           if [ "$SUITE" = "smoke" ]; then
             COMMON_FILTER="Category=High&Category=Smoke"
@@ -235,6 +247,8 @@ jobs:
           TEST_VIEWER_PASSWORD: ${{ secrets.TEST_SHARED_PASSWORD }}
           TestSettings__Browser: ${{ matrix.browser }}
           TestSettings__Headless: 'true'
+          Reporting__ActiveReporter: Html
+          TestSettings__SuiteName: 'Nightly - UI Tests (${{ matrix.browser }})'
         shell: pwsh
         run: |
           $suite = "${{ github.event.inputs.suite }}"
@@ -274,3 +288,11 @@ jobs:
             Write-Host "Running full UI suite (no filter)"
             dotnet test tests/UITests/UITests.csproj --no-build --configuration ${{ env.BUILD_CONFIGURATION }}
           }
+
+      - name: Upload HTML Report — UI Tests (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-ui-${{ matrix.browser }}
+          path: reports/execution-report.html
+          if-no-files-found: warn

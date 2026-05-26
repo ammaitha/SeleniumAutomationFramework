@@ -181,6 +181,12 @@ public static class DriverManager
         options.AddArgument("--width=1920");
         options.AddArgument("--height=1080");
 
+        // Enable WebDriver BiDi so callers can register preload scripts that run on every
+        // document load. Hybrid tests rely on this to keep API-seeded auth state pinned
+        // across SPA-driven navigations on Firefox (CDP-style script injection is not
+        // available on Firefox; BiDi is the cross-browser equivalent).
+        options.UseWebSocketUrl = true;
+
         if (headless)
         {
             options.AddArgument("--headless");
